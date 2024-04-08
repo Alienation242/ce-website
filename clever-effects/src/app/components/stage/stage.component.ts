@@ -95,20 +95,25 @@ export class StageComponent implements OnInit {
       'darkBlueSky'
     );
 
-    this.sceneService.addDecorativePlane(
-      '../../assets/env/T_Grasspatch01.png',
-      new THREE.Vector3(1, this.initialPositions.darkGreenPlane + 11, 0), // Relative position to the parent plane
-      new THREE.Vector2(2, 2),
-      '#556b2f', // Green tint
-      'darkGreenPlane' // The name of the parent plane
-    );
+    // this.sceneService.addDecorativePlane(
+    //   '../../assets/env/T_Grasspatch01.png',
+    //   new THREE.Vector3(1, this.initialPositions.darkGreenPlane + 11, 0), // Relative position to the parent plane
+    //   new THREE.Vector2(2, 2),
+    //   '#556b2f', // Green tint
+    //   'darkGreenPlane' // The name of the parent plane
+    // );
 
-    this.sceneService.addDecorativePlane(
-      '../../assets/env/T_Grasspatch01.png',
-      new THREE.Vector3(4, this.initialPositions.darkGreenPlane + 11, 0), // Relative position to the parent plane
-      new THREE.Vector2(2, 2),
-      '#6b8e23', // Green tint
-      'mediumGreenPlane' // The name of the parent plane
+    // this.sceneService.addDecorativePlane(
+    //   '../../assets/env/T_Grasspatch01.png',
+    //   new THREE.Vector3(4, this.initialPositions.darkGreenPlane + 11, 0), // Relative position to the parent plane
+    //   new THREE.Vector2(2, 2),
+    //   '#6b8e23', // Green tint
+    //   'mediumGreenPlane' // The name of the parent plane
+    // );
+
+    this.populateWithVegetation(
+      ['../../assets/env/T_Grasspatch01.png'],
+      this.sceneService
     );
   }
 
@@ -179,6 +184,41 @@ export class StageComponent implements OnInit {
       )
     );
   };
+
+  private populateWithVegetation(assets: string[], sceneService: SceneService) {
+    // Define the planes and their properties
+    const planes = [
+      { name: 'darkGreenPlane', color: '#556b2f', scale: 3, zOffset: 0.2 },
+      { name: 'mediumGreenPlane', color: '#6b8e23', scale: 1.5, zOffset: 0.1 },
+      { name: 'lightGreenPlane', color: '#9acd32', scale: 1, zOffset: 0 },
+    ];
+
+    Math.random();
+
+    planes.forEach((plane) => {
+      const numItems = Math.floor(Math.random() * 5) + 3; // Random number of items per plane, for example between 3 and 7
+
+      for (let i = 0; i < numItems; i++) {
+        const assetIndex = Math.floor(Math.random() * assets.length);
+        const assetURL = assets[assetIndex];
+        const position = new THREE.Vector3(
+          (Math.random() - 0.5) * 20,
+          this.initialPositions.darkGreenPlane + 10.5,
+          plane.zOffset
+        ); // Random position within plane bounds
+        const size = new THREE.Vector2(plane.scale, plane.scale); // Scale size based on plane
+
+        // Add the decorative plane to the scene, parented to the current green plane
+        sceneService.addDecorativePlane(
+          assetURL,
+          position,
+          size,
+          plane.color,
+          plane.name
+        );
+      }
+    });
+  }
 
   ngOnDestroy(): void {
     window.removeEventListener('mousemove', this.handleMouseMove);
