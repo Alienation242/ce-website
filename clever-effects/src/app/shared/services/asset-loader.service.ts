@@ -7,14 +7,13 @@ import * as THREE from 'three';
 export class AssetLoaderService {
   private loader = new THREE.TextureLoader();
   private cache = new Map<string, THREE.Texture>();
-
   public loadTexture(url: string): Promise<THREE.Texture> {
     if (this.cache.has(url)) {
       return Promise.resolve(this.cache.get(url)!);
     }
 
     return new Promise((resolve, reject) => {
-      this.loader.load(
+      new THREE.TextureLoader().load(
         url,
         (texture) => {
           this.cache.set(url, texture);

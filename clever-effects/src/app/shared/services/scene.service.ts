@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import * as THREE from 'three';
+import { AssetLoaderService } from './asset-loader.service';
 
 @Injectable({
   providedIn: 'root',
@@ -9,7 +10,7 @@ export class SceneService {
   private camera!: THREE.PerspectiveCamera;
   private renderer!: THREE.WebGLRenderer;
 
-  constructor() {
+  constructor(private assetLoaderService: AssetLoaderService) {
     this.initializeScene();
   }
 
@@ -87,6 +88,40 @@ export class SceneService {
     plane.position.set(position.x, position.y, position.z);
     plane.name = name; // Set the name for reference
     this.addToScene(plane);
+  }
+  public addDecorativePlane(
+    textureUrl: string,
+    position: THREE.Vector3,
+    size: THREE.Vector2,
+    color: string,
+    parentPlaneName: string
+  ): void {
+    this.assetLoaderService.loadTexture(textureUrl).then((texture) => {
+      const geometry = new THREE.PlaneGeometry(size.x, size.y);
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        side: THREE.DoubleSide,
+        color: color, // Apply the color tint
+      });
+      const decorativePlane = new THREE.Mesh(geometry, material);
+      decorativePlane.position.set(position.x, position.y, position.z);
+
+      // Retrieve the parent plane by name and add the decorative plane as its child
+      const parentPlane = this.scene.getObjectByName(parentPlaneName);
+      if (parentPlane) {
+        parentPlane.add(decorativePlane);
+      } else {
+        console.warn(`Parent plane '${parentPlaneName}' not found.`);
+      }
+    });
+  }
+
+  public addObjectToPlane(object: THREE.Object3D, planeName: string): void {
+    const plane = this.scene.getObjectByName(planeName);
+    if (plane) {
+      plane.add(object); // This sets the plane as the parent of the object
+    }
   }
 
   public movePlane(planeId: string, newPosition: THREE.Vector3): void {

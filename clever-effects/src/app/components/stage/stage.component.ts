@@ -44,7 +44,7 @@ export class StageComponent implements OnInit {
     // Calculate a sufficiently wide plane to cover the camera's horizontal view at different depths
     // This is a simplified approximation. You may need to adjust these values based on your camera's actual FOV and aspect ratio
     const planeWidth = 100; // Ensure this is wide enough to cover the view
-    const planeHeight = 5; // Height of the planes
+    const planeHeight = 6; // Height of the planes
 
     // Foreground - Lightest Green
     this.sceneService.addColoredPlane(
@@ -94,6 +94,22 @@ export class StageComponent implements OnInit {
       new THREE.Vector2(planeWidth, planeHeight),
       'darkBlueSky'
     );
+
+    this.sceneService.addDecorativePlane(
+      '../../assets/env/T_Grasspatch01.png',
+      new THREE.Vector3(1, this.initialPositions.darkGreenPlane + 11, 0), // Relative position to the parent plane
+      new THREE.Vector2(2, 2),
+      '#556b2f', // Green tint
+      'darkGreenPlane' // The name of the parent plane
+    );
+
+    this.sceneService.addDecorativePlane(
+      '../../assets/env/T_Grasspatch01.png',
+      new THREE.Vector3(4, this.initialPositions.darkGreenPlane + 11, 0), // Relative position to the parent plane
+      new THREE.Vector2(2, 2),
+      '#6b8e23', // Green tint
+      'mediumGreenPlane' // The name of the parent plane
+    );
   }
 
   private addMouseMoveListener(): void {
@@ -106,7 +122,7 @@ export class StageComponent implements OnInit {
 
     // Clamp values to prevent excessive movement
     const maxX = 10; // Max movement on X axis
-    const maxY = 7; // Max movement on Y axis
+    const maxY = 4; // Max movement on Y axis
 
     mouseX = Math.max(-maxX, Math.min(maxX, mouseX));
     mouseY = Math.max(-maxY, Math.min(maxY, mouseY));
