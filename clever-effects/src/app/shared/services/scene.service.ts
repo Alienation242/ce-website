@@ -72,11 +72,11 @@ export class SceneService {
   public removeFromScene(object: THREE.Object3D): void {
     this.scene.remove(object);
   }
-
   public addColoredPlane(
     color: string,
     position: THREE.Vector3,
-    size: THREE.Vector2
+    size: THREE.Vector2,
+    name: string
   ): void {
     const geometry = new THREE.PlaneGeometry(size.x, size.y);
     const material = new THREE.MeshBasicMaterial({
@@ -85,7 +85,15 @@ export class SceneService {
     });
     const plane = new THREE.Mesh(geometry, material);
     plane.position.set(position.x, position.y, position.z);
+    plane.name = name; // Set the name for reference
     this.addToScene(plane);
+  }
+
+  public movePlane(planeId: string, newPosition: THREE.Vector3): void {
+    const plane = this.scene.getObjectByName(planeId);
+    if (plane) {
+      plane.position.set(newPosition.x, newPosition.y, newPosition.z);
+    }
   }
 
   // Add additional helper methods as necessary...
