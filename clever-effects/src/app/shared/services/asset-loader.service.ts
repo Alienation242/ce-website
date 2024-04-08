@@ -14,7 +14,8 @@ export class AssetLoaderService {
     }
 
     return new Promise((resolve, reject) => {
-      this.loader.load(url,
+      this.loader.load(
+        url,
         (texture) => {
           this.cache.set(url, texture);
           resolve(texture);
