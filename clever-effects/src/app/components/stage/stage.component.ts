@@ -30,10 +30,11 @@ export class StageComponent implements OnInit {
     this.rendererContainer.nativeElement.appendChild(
       this.sceneService.getRendererDOM()
     );
-    this.interactionService.setupInteractionListeners(
+    this.interactionService.setup(
       this.sceneService.getRenderer(),
       this.sceneService.getCamera()
     );
+
     this.setupStage();
     this.addMouseMoveListener();
 
