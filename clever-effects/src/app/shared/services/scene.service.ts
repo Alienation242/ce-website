@@ -155,5 +155,14 @@ export class SceneService {
     }
   }
 
+  public highlightPlane(planeName: string, highlight: boolean): void {
+    const plane = this.scene.getObjectByName(planeName);
+    if (plane instanceof THREE.Mesh) {
+      const material = plane.material as THREE.MeshBasicMaterial;
+      material.color.set(highlight ? 0xff0000 : 0x00ff00); // Example: Red on highlight, green otherwise
+      // Ensure the scene is updated if necessary
+    }
+  }
+
   // Add additional helper methods as necessary...
 }

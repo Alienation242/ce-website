@@ -1,0 +1,19 @@
+.interaction-box {
+  width: 200px;
+  height: 100px;
+  line-height: 100px; /* Center the text vertically */
+  text-align: center;
+  background-color: #f0f0f0;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  transition: background-color 0.3s, transform 0.3s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  margin: 20px;
+  user-select: none; /* Prevent text selection */
+}
+
+.interaction-box:hover {
+  background-color: #e0e0e0;
+  transform: translateY(-2px); /* Slight lift effect */
+}
