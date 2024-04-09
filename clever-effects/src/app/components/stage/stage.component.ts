@@ -95,28 +95,12 @@ export class StageComponent implements OnInit {
       'darkBlueSky'
     );
 
-    // this.sceneService.addDecorativePlane(
-    //   '../../assets/env/T_Grasspatch01.png',
-    //   new THREE.Vector3(1, this.initialPositions.darkGreenPlane + 11, 0), // Relative position to the parent plane
-    //   new THREE.Vector2(2, 2),
-    //   '#556b2f', // Green tint
-    //   'darkGreenPlane' // The name of the parent plane
-    // );
-
-    // this.sceneService.addDecorativePlane(
-    //   '../../assets/env/T_Grasspatch01.png',
-    //   new THREE.Vector3(4, this.initialPositions.darkGreenPlane + 11, 0), // Relative position to the parent plane
-    //   new THREE.Vector2(2, 2),
-    //   '#6b8e23', // Green tint
-    //   'mediumGreenPlane' // The name of the parent plane
-    // );
-
     this.populateWithVegetation(
       [
-        '../../assets/env/T_Grasspatch01.png',
-        '../../assets/env/T_Grasspatch02.png',
-        '../../assets/env/T_Grasspatch03.png',
-        '../../assets/env/T_Grasspatch04.png',
+        { url: '../../assets/env/T_Grasspatch01.png', yOffset: 0 },
+        { url: '../../assets/env/T_Grasspatch02.png', yOffset: 0 },
+        { url: '../../assets/env/T_Grasspatch03.png', yOffset: 0 },
+        { url: '../../assets/env/T_Grasspatch04.png', yOffset: 0 },
       ],
       this.sceneService
     );
@@ -190,32 +174,52 @@ export class StageComponent implements OnInit {
     );
   };
 
-  private populateWithVegetation(assets: string[], sceneService: SceneService) {
+  private populateWithVegetation(
+    assets: { url: string; yOffset: number }[],
+    sceneService: SceneService
+  ) {
     // Define the planes and their properties
     const planes = [
-      { name: 'darkGreenPlane', color: '#556b2f', scale: 2, zOffset: 0.2 },
-      { name: 'mediumGreenPlane', color: '#6b8e23', scale: 1.5, zOffset: 0.1 },
-      { name: 'lightGreenPlane', color: '#9acd32', scale: 1, zOffset: 0 },
+      {
+        name: 'darkGreenPlane',
+        color: '#556b2f',
+        scale: 2,
+        zOffset: 0.2,
+        yOffset: 4,
+      },
+      {
+        name: 'mediumGreenPlane',
+        color: '#6b8e23',
+        scale: 1.5,
+        zOffset: 0.1,
+        yOffset: 3.7,
+      },
+      {
+        name: 'lightGreenPlane',
+        color: '#9acd32',
+        scale: 1,
+        zOffset: 0,
+        yOffset: 3.5,
+      },
     ];
 
     Math.random();
 
     planes.forEach((plane) => {
-      const numItems = Math.floor(Math.random() * 3) + 50; // Random number of items per plane, for example between 3 and 7
+      const numItems = Math.floor(Math.random() * 3) + 50; // Adjusted for example purposes
 
       for (let i = 0; i < numItems; i++) {
-        const assetIndex = Math.floor(Math.random() * assets.length);
-        const assetURL = assets[assetIndex];
+        const asset = assets[Math.floor(Math.random() * assets.length)];
         const position = new THREE.Vector3(
-          (Math.random() - 0.5) * 50,
-          3.4,
-          plane.zOffset
-        ); // Random position within plane bounds
+          (Math.random() - 0.5) * 40, // Random X within plane bounds
+          asset.yOffset + plane.yOffset, // Use the asset's unique yOffset
+          plane.zOffset // Ensure proper Z positioning for depth
+        );
         const size = new THREE.Vector2(plane.scale * 1.5, plane.scale); // Scale size based on plane
 
         // Add the decorative plane to the scene, parented to the current green plane
         sceneService.addDecorativePlane(
-          assetURL,
+          asset.url, // Use the URL from the asset object
           position,
           size,
           plane.color,
