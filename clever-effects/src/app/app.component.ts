@@ -1,10 +1,9 @@
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { ThreeComponent } from './three/three.component';
 
 @Component({
   standalone: true,
-  imports: [ RouterModule, ThreeComponent],
+  imports: [RouterModule],
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
