@@ -112,7 +112,12 @@ export class StageComponent implements OnInit {
     // );
 
     this.populateWithVegetation(
-      ['../../assets/env/T_Grasspatch01.png'],
+      [
+        '../../assets/env/T_Grasspatch01.png',
+        '../../assets/env/T_Grasspatch02.png',
+        '../../assets/env/T_Grasspatch03.png',
+        '../../assets/env/T_Grasspatch04.png',
+      ],
       this.sceneService
     );
   }
@@ -188,7 +193,7 @@ export class StageComponent implements OnInit {
   private populateWithVegetation(assets: string[], sceneService: SceneService) {
     // Define the planes and their properties
     const planes = [
-      { name: 'darkGreenPlane', color: '#556b2f', scale: 3, zOffset: 0.2 },
+      { name: 'darkGreenPlane', color: '#556b2f', scale: 2, zOffset: 0.2 },
       { name: 'mediumGreenPlane', color: '#6b8e23', scale: 1.5, zOffset: 0.1 },
       { name: 'lightGreenPlane', color: '#9acd32', scale: 1, zOffset: 0 },
     ];
@@ -196,17 +201,17 @@ export class StageComponent implements OnInit {
     Math.random();
 
     planes.forEach((plane) => {
-      const numItems = Math.floor(Math.random() * 5) + 3; // Random number of items per plane, for example between 3 and 7
+      const numItems = Math.floor(Math.random() * 3) + 50; // Random number of items per plane, for example between 3 and 7
 
       for (let i = 0; i < numItems; i++) {
         const assetIndex = Math.floor(Math.random() * assets.length);
         const assetURL = assets[assetIndex];
         const position = new THREE.Vector3(
-          (Math.random() - 0.5) * 20,
-          this.initialPositions.darkGreenPlane + 10.5,
+          (Math.random() - 0.5) * 50,
+          3.4,
           plane.zOffset
         ); // Random position within plane bounds
-        const size = new THREE.Vector2(plane.scale, plane.scale); // Scale size based on plane
+        const size = new THREE.Vector2(plane.scale * 1.5, plane.scale); // Scale size based on plane
 
         // Add the decorative plane to the scene, parented to the current green plane
         sceneService.addDecorativePlane(
