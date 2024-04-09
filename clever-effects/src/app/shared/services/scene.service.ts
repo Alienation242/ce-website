@@ -49,9 +49,33 @@ export class SceneService {
   };
 
   private onWindowResize = (): void => {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
+    // Define the desired aspect ratio
+    const aspectRatio = 16 / 9;
+
+    // Calculate the aspect ratio based on the window size
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    const windowAspectRatio = width / height;
+
+    // Adjust width and height to maintain the aspect ratio
+    if (windowAspectRatio > aspectRatio) {
+      // If the window is too wide, adjust the width to maintain the aspect ratio
+      width = height * aspectRatio;
+    } else {
+      // If the window is too tall, adjust the height to maintain the aspect ratio
+      height = width / aspectRatio;
+    }
+
+    // Update the renderer and camera with the new dimensions
+    this.renderer.setSize(width, height);
+    this.camera.aspect = aspectRatio;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // Optionally, center the canvas if it doesn't fill the window
+    const canvas = this.renderer.domElement;
+    canvas.style.position = 'absolute';
+    canvas.style.top = `${(window.innerHeight - height) / 2}px`;
+    canvas.style.left = `${(window.innerWidth - width) / 2}px`;
   };
 
   public getRendererDOM(): HTMLCanvasElement {
