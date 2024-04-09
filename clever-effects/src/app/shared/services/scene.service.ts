@@ -9,6 +9,7 @@ export class SceneService {
   private scene!: THREE.Scene;
   private camera!: THREE.PerspectiveCamera;
   private renderer!: THREE.WebGLRenderer;
+  public interactiveObjects: THREE.Mesh[] = []; // Store interactive objects here
 
   constructor(private assetLoaderService: AssetLoaderService) {
     this.initializeScene();
@@ -162,6 +163,49 @@ export class SceneService {
       material.color.set(highlight ? 0xff0000 : 0x00ff00); // Example: Red on highlight, green otherwise
       // Ensure the scene is updated if necessary
     }
+  }
+
+  public createInteractionBox(
+    name: string,
+    assetPath: string,
+    color: string,
+    position: THREE.Vector3,
+    parentName?: string
+  ): void {
+    this.assetLoaderService
+      .loadTexture(assetPath)
+      .then((texture) => {
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          color: color, // Use the color as a tint for the texture
+          transparent: true, // Ensure transparency is supported
+        });
+        const geometry = new THREE.PlaneGeometry(1, 1); // You can adjust the size as needed
+        const plane = new THREE.Mesh(geometry, material);
+        plane.name = name; // Ensure you set a name for identification
+        this.interactiveObjects.push(plane); // Add the plane to the interactiveObjects array
+
+        plane.position.copy(position);
+        plane.name = name;
+
+        // If a parent object name is provided, add this plane as a child of that object
+        if (parentName) {
+          const parentObject = this.scene.getObjectByName(parentName);
+          if (parentObject) {
+            parentObject.add(plane);
+          } else {
+            console.warn(
+              `Parent object "${parentName}" not found in the scene.`
+            );
+          }
+        } else {
+          // No parent specified, add directly to the scene
+          this.scene.add(plane);
+        }
+      })
+      .catch((error) => {
+        console.error(`Failed to load texture "${assetPath}":`, error);
+      });
   }
 
   // Add additional helper methods as necessary...

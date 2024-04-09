@@ -36,6 +36,14 @@ export class StageComponent implements OnInit {
     );
     this.setupStage();
     this.addMouseMoveListener();
+
+    this.sceneService.createInteractionBox(
+      'myInteractiveBox', // Name
+      '../../assets/env/T_Grasspatch01.png', // Asset path
+      '#ff0000', // Color tint
+      new THREE.Vector3(0, 3, 0), // Position
+      'lightGreenPlane' // Parent (optional)
+    );
   }
 
   private setupStage(): void {
