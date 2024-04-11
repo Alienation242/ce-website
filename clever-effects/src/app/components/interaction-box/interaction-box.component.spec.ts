@@ -1,16 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ThreeComponent } from './three.component';
+import { InteractionBoxComponent } from './interaction-box.component';
 
-describe('ThreeComponent', () => {
-  let component: ThreeComponent;
-  let fixture: ComponentFixture<ThreeComponent>;
+describe('InteractionBoxComponent', () => {
+  let component: InteractionBoxComponent;
+  let fixture: ComponentFixture<InteractionBoxComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ThreeComponent],
+      imports: [InteractionBoxComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ThreeComponent);
+    fixture = TestBed.createComponent(InteractionBoxComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

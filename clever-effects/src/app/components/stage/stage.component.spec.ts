@@ -1,16 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { CubeComponent } from './cube.component';
+import { StageComponent } from './stage.component';
 
-describe('CubeComponent', () => {
-  let component: CubeComponent;
-  let fixture: ComponentFixture<CubeComponent>;
+describe('StageComponent', () => {
+  let component: StageComponent;
+  let fixture: ComponentFixture<StageComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CubeComponent],
+      imports: [StageComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(CubeComponent);
+    fixture = TestBed.createComponent(StageComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
