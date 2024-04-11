@@ -27,21 +27,51 @@ export class InteractionService {
       return;
     }
 
-    this.renderer.domElement.addEventListener('mousemove', (event) =>
-      this.onMouseMove(event)
-    );
-
-    this.renderer.domElement.addEventListener('click', (event) =>
-      this.onMouseClick(event, this.renderer!, this.camera!)
-    );
-    // Add more listeners as needed (e.g. 'touchstart')
+    this.renderer.domElement.addEventListener('mousemove', this.onMouseMove);
+    this.renderer.domElement.addEventListener('click', this.onMouseClick);
+    // Change cursor style back to default when not hovering over interactive objects
+    this.renderer.domElement.addEventListener('mouseout', () => {
+      this.resetHoveredObject();
+      this.renderer!.domElement.style.cursor = 'auto';
+    });
   }
 
-  // Adjusted onMouseMove method in InteractionService
   public onMouseMove = (event: MouseEvent): void => {
-    if (!this.renderer || !this.camera) return; // Safety check
+    if (!this.renderer || !this.camera) return;
 
-    // Assuming renderer and camera are now passed to this method or set up earlier
+    const mouse = new THREE.Vector2(
+      (event.clientX / this.renderer.domElement.clientWidth) * 2 - 1,
+      -(event.clientY / this.renderer.domElement.clientHeight) * 2 + 1
+    );
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, this.camera);
+
+    const intersects = raycaster.intersectObjects(
+      this.sceneService.interactiveObjects,
+      true
+    );
+
+    if (intersects.length > 0) {
+      if (this.hoveredObject !== intersects[0].object) {
+        this.resetHoveredObject();
+        this.hoveredObject = intersects[0].object;
+        // Scale up the hovered object slightly
+        this.hoveredObject.scale.set(1.1, 1.1, 1.1);
+        // Change cursor to indicate clickability
+        this.renderer.domElement.style.cursor = 'pointer';
+        // Note: Implementing a border effect directly in Three.js can be complex and may require additional geometries or shader adjustments
+      }
+    } else {
+      this.resetHoveredObject();
+    }
+  };
+
+  private onMouseClick = (event: MouseEvent): void => {
+    event.preventDefault();
+
+    if (!this.renderer || !this.camera) return;
+
     const mouse = new THREE.Vector2(
       (event.clientX / this.renderer.domElement.clientWidth) * 2 - 1,
       -(event.clientY / this.renderer.domElement.clientHeight) * 2 + 1
@@ -54,64 +84,17 @@ export class InteractionService {
       this.sceneService.interactiveObjects
     );
 
-    if (intersects.length > 0) {
-      const object = intersects[0].object;
-      if (
-        object instanceof THREE.Mesh &&
-        object.material instanceof THREE.MeshBasicMaterial
-      ) {
-        if (this.hoveredObject !== object) {
-          // Reset previous hovered object's color
-          if (
-            this.hoveredObject instanceof THREE.Mesh &&
-            this.hoveredObject.material instanceof THREE.MeshBasicMaterial
-          ) {
-            this.hoveredObject.material.color.set(0x00ff00); // Original color
-          }
-          // Highlight new hovered object
-          object.material.color.set(0xff0000); // Highlight color
-          this.hoveredObject = object;
-        }
-      }
-    } else {
-      // Reset if no object is hovered
-      if (
-        this.hoveredObject instanceof THREE.Mesh &&
-        this.hoveredObject.material instanceof THREE.MeshBasicMaterial
-      ) {
-        this.hoveredObject.material.color.set(0x00ff00); // Original color
-        this.hoveredObject = null;
-      }
+    if (intersects.length > 0 && intersects[0].object.userData['onClick']) {
+      intersects[0].object.userData['onClick']();
     }
   };
 
-  private onMouseClick(
-    event: MouseEvent,
-    renderer: THREE.WebGLRenderer,
-    camera: THREE.PerspectiveCamera
-  ): void {
-    event.preventDefault();
-
-    const mouse = new THREE.Vector2(
-      (event.clientX / renderer.domElement.clientWidth) * 2 - 1,
-      -(event.clientY / renderer.domElement.clientHeight) * 2 + 1
-    );
-
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(mouse, camera);
-
-    // Assuming the interactive objects are stored or can be referenced from SceneService
-    const intersects = raycaster.intersectObjects(
-      this.sceneService.interactiveObjects
-    );
-
-    if (intersects.length > 0) {
-      const object = intersects[0].object;
-      console.log(`Clicked on object: ${object.name}`);
-      // Here, you can check for the specific object based on its name or other properties
-      if (object.userData['onClick']) {
-        object.userData['onClick'](); // Trigger the onClick callback
-      }
+  private resetHoveredObject(): void {
+    if (this.hoveredObject) {
+      // Reset scale to original
+      this.hoveredObject.scale.set(1, 1, 1);
+      this.hoveredObject = null;
+      this.renderer!.domElement.style.cursor = 'auto';
     }
   }
 }
