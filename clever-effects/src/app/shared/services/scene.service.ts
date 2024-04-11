@@ -83,6 +83,10 @@ export class SceneService {
     return this.renderer.domElement;
   }
 
+  public getScene(): THREE.Scene {
+    return this.scene;
+  }
+
   public getRenderer(): THREE.WebGLRenderer {
     return this.renderer;
   }
@@ -218,8 +222,10 @@ export class SceneService {
     // Your existing logic to switch between themes
     if (isDarkMode) {
       // Logic for setting dark theme colors
+      console.log('Switching to dark theme');
     } else {
       // Logic for setting light theme colors
+      console.log('Switching to light theme');
     }
     // Possibly update other scene elements or global state as needed
   }

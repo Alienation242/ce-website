@@ -21,6 +21,35 @@ export class StageComponent implements OnInit {
     darkBlueSky: 9,
   };
 
+  colorThemes: {
+    [key: string]: {
+      light: { [key: string]: string };
+      dark: { [key: string]: string };
+    };
+  } = {
+    meadow: {
+      light: {
+        darkGreenPlane: '#556b2f',
+        mediumGreenPlane: '#6b8e23',
+        lightGreenPlane: '#9acd32',
+        lightBlueSky: '#add8e6',
+        mediumBlueSky: '#87ceeb',
+        darkBlueSky: '#00bfff',
+      },
+      dark: {
+        darkGreenPlane: '#37412a',
+        mediumGreenPlane: '#49531d',
+        lightGreenPlane: '#687422',
+        lightBlueSky: '#2a3b55',
+        mediumBlueSky: '#1d2c49',
+        darkBlueSky: '#0f1d3d',
+      },
+    },
+  };
+
+  currentTheme = 'meadow'; // Initial theme
+  isDarkMode = false;
+
   constructor(
     private sceneService: SceneService,
     private interactionService: InteractionService
@@ -243,6 +272,7 @@ export class StageComponent implements OnInit {
       // Remove the current button and add a new one with the opposite texture
       this.sceneService.removeFromScene('themeToggleButton');
       this.addThemeToggleButton(newTextureType);
+      this.toggleTheme();
     };
 
     // Use createInteractionBox to add the toggle button
@@ -254,6 +284,52 @@ export class StageComponent implements OnInit {
       onClickCallback,
       undefined // No parent
     );
+  }
+
+  toggleTheme(): void {
+    this.isDarkMode = !this.isDarkMode;
+    console.log(`Toggling theme to ${this.isDarkMode ? 'Dark' : 'Light'}`);
+
+    const themeColors =
+      this.colorThemes[this.currentTheme][this.isDarkMode ? 'dark' : 'light'];
+
+    Object.keys(themeColors).forEach((planeName) => {
+      const plane = this.sceneService.getScene().getObjectByName(planeName);
+      if (plane instanceof THREE.Mesh) {
+        const newColor = new THREE.Color(themeColors[planeName]);
+        this.lerpColor(plane.material.color, newColor, 0.2);
+
+        if (plane) {
+          plane.children.forEach((child) => {
+            if (child instanceof THREE.Mesh) {
+              this.lerpColor(child.material.color, newColor, 0.2);
+            }
+          });
+        }
+      }
+    });
+  }
+
+  lerpColor(
+    color: THREE.Color,
+    targetColor: THREE.Color,
+    duration: number
+  ): void {
+    const startColor = color.clone();
+    const startTime = Date.now();
+
+    const animate = () => {
+      const elapsedTime = Date.now() - startTime;
+      const t = elapsedTime / (duration * 1000);
+      if (t < 1) {
+        color.lerpColors(startColor, targetColor, t);
+        requestAnimationFrame(animate);
+      } else {
+        color.set(targetColor);
+      }
+    };
+
+    animate();
   }
 
   ngOnDestroy(): void {
