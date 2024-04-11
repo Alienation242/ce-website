@@ -9,6 +9,7 @@ export class SceneService {
   private scene!: THREE.Scene;
   private camera!: THREE.PerspectiveCamera;
   private renderer!: THREE.WebGLRenderer;
+  public interactiveObjects: THREE.Mesh[] = []; // Store interactive objects here
 
   constructor(private assetLoaderService: AssetLoaderService) {
     this.initializeScene();
@@ -82,6 +83,10 @@ export class SceneService {
     return this.renderer.domElement;
   }
 
+  public getScene(): THREE.Scene {
+    return this.scene;
+  }
+
   public getRenderer(): THREE.WebGLRenderer {
     return this.renderer;
   }
@@ -94,9 +99,21 @@ export class SceneService {
     this.scene.add(object);
   }
 
-  public removeFromScene(object: THREE.Object3D): void {
-    this.scene.remove(object);
+  // In SceneService
+  public removeFromScene(objectName: string): void {
+    const object = this.scene.getObjectByName(objectName);
+    if (object) {
+      this.scene.remove(object);
+      // If the object is also part of interactiveObjects, remove it from there too
+      const index = this.interactiveObjects.findIndex(
+        (obj) => obj.name === objectName
+      );
+      if (index > -1) {
+        this.interactiveObjects.splice(index, 1);
+      }
+    }
   }
+
   public addColoredPlane(
     color: string,
     position: THREE.Vector3,
@@ -153,6 +170,64 @@ export class SceneService {
     if (plane) {
       plane.position.set(newPosition.x, newPosition.y, newPosition.z);
     }
+  }
+
+  public highlightPlane(planeName: string, highlight: boolean): void {
+    const plane = this.scene.getObjectByName(planeName);
+    if (plane instanceof THREE.Mesh) {
+      const material = plane.material as THREE.MeshBasicMaterial;
+      material.color.set(highlight ? 0xff0000 : 0x00ff00); // Example: Red on highlight, green otherwise
+      // Ensure the scene is updated if necessary
+    }
+  }
+
+  public createInteractionBox(
+    name: string,
+    assetPath: string,
+    color: string,
+    position: THREE.Vector3,
+    onClickCallback: () => void,
+    parentName?: string
+  ): void {
+    this.assetLoaderService
+      .loadTexture(assetPath)
+      .then((texture) => {
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          color: color,
+          transparent: true,
+        });
+        const geometry = new THREE.PlaneGeometry(1, 1);
+        const plane = new THREE.Mesh(geometry, material);
+        plane.position.copy(position);
+        plane.name = name;
+
+        // Make the plane interactive
+        plane.userData = { onClick: onClickCallback };
+        this.interactiveObjects.push(plane);
+
+        if (parentName) {
+          const parentObject = this.scene.getObjectByName(parentName);
+          parentObject?.add(plane);
+        } else {
+          this.scene.add(plane);
+        }
+      })
+      .catch((error) => {
+        console.error(`Failed to load texture "${assetPath}":`, error);
+      });
+  }
+
+  public toggleTheme(isDarkMode: boolean): void {
+    // Your existing logic to switch between themes
+    if (isDarkMode) {
+      // Logic for setting dark theme colors
+      console.log('Switching to dark theme');
+    } else {
+      // Logic for setting light theme colors
+      console.log('Switching to light theme');
+    }
+    // Possibly update other scene elements or global state as needed
   }
 
   // Add additional helper methods as necessary...
