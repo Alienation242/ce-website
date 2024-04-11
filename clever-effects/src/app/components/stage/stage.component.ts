@@ -38,13 +38,7 @@ export class StageComponent implements OnInit {
     this.setupStage();
     this.addMouseMoveListener();
 
-    this.sceneService.createInteractionBox(
-      'myInteractiveBox', // Name
-      '../../assets/env/T_Grasspatch01.png', // Asset path
-      '#ff0000', // Color tint
-      new THREE.Vector3(0, 3, 0), // Position
-      'lightGreenPlane' // Parent (optional)
-    );
+    this.addThemeToggleButton('sun'); // Start with the sun
   }
 
   private setupStage(): void {
@@ -236,6 +230,30 @@ export class StageComponent implements OnInit {
         );
       }
     });
+  }
+  private addThemeToggleButton(textureType: 'sun' | 'moon'): void {
+    const texturePath =
+      textureType === 'sun'
+        ? '../../assets/env/T_Sun.png'
+        : '../../assets/env/T_Moon.png';
+    const onClickCallback = () => {
+      // Toggle theme logic
+      const newTextureType = textureType === 'sun' ? 'moon' : 'sun';
+      this.sceneService.toggleTheme(newTextureType === 'moon'); // Assuming this method exists and toggles light/dark mode
+      // Remove the current button and add a new one with the opposite texture
+      this.sceneService.removeFromScene('themeToggleButton');
+      this.addThemeToggleButton(newTextureType);
+    };
+
+    // Use createInteractionBox to add the toggle button
+    this.sceneService.createInteractionBox(
+      'themeToggleButton',
+      texturePath,
+      '#ffffff', // Assuming a white tint for simplicity; adjust as needed
+      new THREE.Vector3(4, 2, 0), // Position in the upper right corner; adjust as needed
+      onClickCallback,
+      undefined // No parent
+    );
   }
 
   ngOnDestroy(): void {

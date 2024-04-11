@@ -95,9 +95,21 @@ export class SceneService {
     this.scene.add(object);
   }
 
-  public removeFromScene(object: THREE.Object3D): void {
-    this.scene.remove(object);
+  // In SceneService
+  public removeFromScene(objectName: string): void {
+    const object = this.scene.getObjectByName(objectName);
+    if (object) {
+      this.scene.remove(object);
+      // If the object is also part of interactiveObjects, remove it from there too
+      const index = this.interactiveObjects.findIndex(
+        (obj) => obj.name === objectName
+      );
+      if (index > -1) {
+        this.interactiveObjects.splice(index, 1);
+      }
+    }
   }
+
   public addColoredPlane(
     color: string,
     position: THREE.Vector3,
@@ -170,6 +182,7 @@ export class SceneService {
     assetPath: string,
     color: string,
     position: THREE.Vector3,
+    onClickCallback: () => void,
     parentName?: string
   ): void {
     this.assetLoaderService
@@ -177,35 +190,38 @@ export class SceneService {
       .then((texture) => {
         const material = new THREE.MeshBasicMaterial({
           map: texture,
-          color: color, // Use the color as a tint for the texture
-          transparent: true, // Ensure transparency is supported
+          color: color,
+          transparent: true,
         });
-        const geometry = new THREE.PlaneGeometry(1, 1); // You can adjust the size as needed
+        const geometry = new THREE.PlaneGeometry(1, 1);
         const plane = new THREE.Mesh(geometry, material);
-        plane.name = name; // Ensure you set a name for identification
-        this.interactiveObjects.push(plane); // Add the plane to the interactiveObjects array
-
         plane.position.copy(position);
         plane.name = name;
 
-        // If a parent object name is provided, add this plane as a child of that object
+        // Make the plane interactive
+        plane.userData = { onClick: onClickCallback };
+        this.interactiveObjects.push(plane);
+
         if (parentName) {
           const parentObject = this.scene.getObjectByName(parentName);
-          if (parentObject) {
-            parentObject.add(plane);
-          } else {
-            console.warn(
-              `Parent object "${parentName}" not found in the scene.`
-            );
-          }
+          parentObject?.add(plane);
         } else {
-          // No parent specified, add directly to the scene
           this.scene.add(plane);
         }
       })
       .catch((error) => {
         console.error(`Failed to load texture "${assetPath}":`, error);
       });
+  }
+
+  public toggleTheme(isDarkMode: boolean): void {
+    // Your existing logic to switch between themes
+    if (isDarkMode) {
+      // Logic for setting dark theme colors
+    } else {
+      // Logic for setting light theme colors
+    }
+    // Possibly update other scene elements or global state as needed
   }
 
   // Add additional helper methods as necessary...

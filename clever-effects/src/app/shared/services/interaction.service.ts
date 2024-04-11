@@ -109,9 +109,8 @@ export class InteractionService {
       const object = intersects[0].object;
       console.log(`Clicked on object: ${object.name}`);
       // Here, you can check for the specific object based on its name or other properties
-      if (object.name === 'interactiveBox') {
-        console.log('Interactive box was clicked');
-        // Perform any action, such as navigating or toggling dark mode
+      if (object.userData['onClick']) {
+        object.userData['onClick'](); // Trigger the onClick callback
       }
     }
   }
