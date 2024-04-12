@@ -70,23 +70,25 @@ export class StageComponent implements OnInit, OnDestroy {
     const theme: ThemeConfig = this.configService.getTheme('meadow');
     const themeColors = this.isDarkMode ? theme.dark : theme.light;
 
-    // Iterate over plane names with type-safe access
     (Object.keys(this.initialPositions) as PlaneName[]).forEach((planeName) => {
       const { y, z } = this.initialPositions[planeName];
       const position = new THREE.Vector3(0, y, z);
       const size = new THREE.Vector2(100, 6);
-      const colorKey = planeName.includes('Sky')
-        ? ((planeName.replace('Sky', '').toLowerCase() +
-            'Blue') as keyof SkyColorTheme)
-        : (planeName as keyof ColorTheme);
+
+      const colorKey = planeName as keyof ColorTheme;
       const color = (
         planeName.includes('Sky')
-          ? themeColors?.['sky'][colorKey]
+          ? themeColors['sky'][colorKey]
           : themeColors[colorKey]
       ) as string;
+
+      console.log(
+        `Adding plane: ${planeName}, Color Key: ${colorKey}, Color: ${color}`
+      );
+
       this.sceneService.addColoredPlane(color, position, size, planeName);
     });
-    // Initialize vegetation or other setup as needed
+
     this.populateWithVegetation(
       [
         { url: '../../assets/env/T_Grasspatch01.png', yOffset: 0 },
@@ -133,8 +135,11 @@ export class StageComponent implements OnInit, OnDestroy {
         ? '../../assets/env/T_Sun.png'
         : '../../assets/env/T_Moon.png';
     const onClickCallback = () => {
+      this.isDarkMode = !this.isDarkMode;
       this.sceneService.removeFromScene('modeToggle');
       this.addModeToggleButton(this.isDarkMode ? 'moon' : 'sun');
+      console.log(this.isDarkMode);
+      console.log('texture is', textureType);
 
       this.toggleTheme();
     };
@@ -148,9 +153,6 @@ export class StageComponent implements OnInit, OnDestroy {
     );
   }
   toggleTheme(): void {
-    // Toggle the dark mode state
-    this.isDarkMode = !this.isDarkMode;
-
     // Fetch the updated theme configuration based on the current state
     this.currentThemeConfig = this.configService.getTheme('meadow');
 
