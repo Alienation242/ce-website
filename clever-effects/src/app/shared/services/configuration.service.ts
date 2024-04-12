@@ -17,7 +17,7 @@ export interface BaseColorTheme {
 }
 
 export interface ColorTheme {
-  [key: string]: string | any; // Using `any` for nested structures if they exist
+  [key: string]: string | any; // Supports nested structures
 }
 
 export interface ThemeConfig {
@@ -25,9 +25,7 @@ export interface ThemeConfig {
   dark: ColorTheme;
 }
 
-type Themes = {
-  [key in ThemeName]: ThemeConfig;
-};
+type Themes = { [key in ThemeName]: ThemeConfig };
 
 @Injectable({
   providedIn: 'root',
@@ -86,63 +84,62 @@ export class ConfigurationService {
     return this.themes[themeName];
   }
 
+  // Generates themes either by applying darkening or custom overrides.
   private generateTheme(
     mode: 'light' | 'dark',
     overrides?: Partial<ColorTheme>
   ): ColorTheme {
-    const colors: ColorTheme = JSON.parse(JSON.stringify(this.baseColors)); // Deep copy base colors
-
-    // Apply darkening if the mode is 'dark' and no specific overrides are provided
+    const colors: ColorTheme = JSON.parse(JSON.stringify(this.baseColors));
     if (mode === 'dark' && !overrides) {
       this.applyDarkening(colors);
     } else if (overrides) {
-      // Apply provided overrides if any
       this.applyOverrides(colors, overrides);
     }
-
     return colors;
   }
 
-  private applyDarkening(colors: ColorTheme) {
+  // Applies darkening to base colors when no specific overrides are provided.
+  private applyDarkening(colors: ColorTheme): void {
     this.applyDarkeningToColorFields(colors);
-    this.applyDarkeningToSky(colors?.['sky']);
+    this.applyDarkeningToSky(colors['sky']);
   }
 
-  private applyDarkeningToColorFields(colors: Omit<ColorTheme, 'sky'>) {
-    (Object.keys(colors) as (keyof Omit<ColorTheme, 'sky'>)[]).forEach(
-      (key) => {
-        if (typeof colors[key] === 'string') {
-          colors[key] = this.darkenColor(colors[key]);
-        }
+  // Darkens color fields not including the sky.
+  private applyDarkeningToColorFields(colors: Omit<ColorTheme, 'sky'>): void {
+    for (const key of Object.keys(colors)) {
+      const color = colors[key as keyof typeof colors];
+      if (typeof color === 'string') {
+        colors[key as keyof typeof colors] = this.darkenColor(color);
       }
-    );
+    }
   }
 
+  // Darkens the colors within the sky object.
   private applyDarkeningToSky(sky: SkyColorTheme) {
     (Object.keys(sky) as (keyof SkyColorTheme)[]).forEach((key) => {
       sky[key] = this.darkenColor(sky[key]);
     });
   }
-
-  private applyOverrides(colors: ColorTheme, overrides: Partial<ColorTheme>) {
+  // Applies custom overrides to the base colors.
+  private applyOverrides(
+    colors: ColorTheme,
+    overrides: Partial<ColorTheme>
+  ): void {
     Object.keys(overrides).forEach((key) => {
-      const overrideValue = overrides[key as keyof ColorTheme];
-      if (overrideValue !== undefined) {
-        if (typeof overrideValue === 'string') {
-          (colors[key as keyof ColorTheme] as unknown as string) =
-            overrideValue;
+      const value = overrides[key as keyof ColorTheme];
+      if (value) {
+        if (typeof value === 'string') {
+          colors[key] = value;
         } else {
-          Object.assign(
-            colors[key as keyof ColorTheme] as SkyColorTheme,
-            overrideValue
-          );
+          Object.assign(colors[key], value);
         }
       }
     });
   }
 
+  // Darkens a hex color by reducing its brightness.
   private darkenColor(color: string): string {
     const col = new THREE.Color(color);
-    return `#${col.multiplyScalar(0.75).getHexString()}`; // Darken color by 25%
+    return `#${col.multiplyScalar(0.75).getHexString()}`;
   }
 }
