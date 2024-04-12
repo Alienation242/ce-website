@@ -136,12 +136,9 @@ export class StageComponent implements OnInit, OnDestroy {
         : '../../assets/env/T_Moon.png';
     const onClickCallback = () => {
       this.isDarkMode = !this.isDarkMode;
+      this.toggleTheme();
       this.sceneService.removeFromScene('modeToggle');
       this.addModeToggleButton(this.isDarkMode ? 'moon' : 'sun');
-      console.log(this.isDarkMode);
-      console.log('texture is', textureType);
-
-      this.toggleTheme();
     };
 
     this.sceneService.createInteractionBox(
@@ -155,34 +152,37 @@ export class StageComponent implements OnInit, OnDestroy {
   toggleTheme(): void {
     // Fetch the updated theme configuration based on the current state
     this.currentThemeConfig = this.configService.getTheme('meadow');
-
-    // Determine which set of theme colors to apply based on the toggled state
     const themeColors = this.isDarkMode
       ? this.currentThemeConfig.dark
       : this.currentThemeConfig.light;
 
     console.log(`Toggling theme to ${this.isDarkMode ? 'Dark' : 'Light'}`);
     console.log('Current theme configuration:', this.currentThemeConfig);
-    console.log('Applying theme colors:', themeColors);
 
-    // Update all planes with the new theme colors
-    Object.keys(themeColors).forEach((planeName) => {
-      const plane = this.sceneService.getScene().getObjectByName(planeName);
+    // Iterate over all planes and update their colors
+    Object.keys(this.initialPositions).forEach((planeName) => {
+      const plane = this.sceneService
+        .getScene()
+        .getObjectByName(planeName as PlaneName);
       if (plane instanceof THREE.Mesh) {
-        const newColor = new THREE.Color(
-          themeColors[planeName as keyof ColorTheme]
-        );
-        console.log(`Updating color of ${planeName} to ${newColor.getStyle()}`);
+        const isSky = planeName.includes('Sky');
+        const colorKey = isSky
+          ? (planeName as keyof SkyColorTheme)
+          : (planeName as keyof ColorTheme);
+        const colorSource = isSky ? themeColors['sky'] : themeColors; // Access the correct source based on plane type
+        const newColor = new THREE.Color(colorSource[colorKey]);
 
-        // Lerp color transition for smooth visual effect
+        console.log(`Updating color of ${planeName} to ${newColor.getStyle()}`);
         this.lerpColor(plane.material.color, newColor, 0.2);
 
-        // Also update colors of child meshes (decorative planes)
-        plane.children.forEach((child) => {
-          if (child instanceof THREE.Mesh) {
-            this.lerpColor(child.material.color, newColor, 0.2);
-          }
-        });
+        // Update decorative planes if it's a green plane
+        if (!isSky) {
+          plane.children.forEach((child) => {
+            if (child instanceof THREE.Mesh) {
+              this.lerpColor(child.material.color, newColor, 0.2);
+            }
+          });
+        }
       }
     });
   }
