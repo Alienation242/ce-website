@@ -120,6 +120,10 @@ export class SceneService {
     size: THREE.Vector2,
     name: string
   ): void {
+    if (!color) {
+      console.error(`Invalid color for plane ${name}`);
+      color = '#FFFFFF'; // Fallback to white if color is undefined
+    }
     const geometry = new THREE.PlaneGeometry(size.x, size.y);
     const material = new THREE.MeshBasicMaterial({
       color,
