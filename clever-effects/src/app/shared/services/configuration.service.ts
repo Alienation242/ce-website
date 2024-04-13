@@ -1,6 +1,19 @@
 import { Injectable } from '@angular/core';
 import * as THREE from 'three';
 
+export interface PlaneConfig {
+  name: string;
+  color: string;
+  scale: number;
+  zOffset: number;
+  yOffset: number;
+}
+
+export interface Asset {
+  url: string;
+  yOffset: number;
+}
+
 export type ThemeName = 'meadow' | 'desert';
 
 export interface SkyColorTheme {
@@ -31,6 +44,30 @@ type Themes = { [key in ThemeName]: ThemeConfig };
   providedIn: 'root',
 })
 export class ConfigurationService {
+  public planesConfig: PlaneConfig[] = [
+    {
+      name: 'darkGreenPlane',
+      color: '#556b2f',
+      scale: 2,
+      zOffset: 0.2,
+      yOffset: 4,
+    },
+    {
+      name: 'mediumGreenPlane',
+      color: '#6b8e23',
+      scale: 1.5,
+      zOffset: 0.1,
+      yOffset: 3.7,
+    },
+    {
+      name: 'lightGreenPlane',
+      color: '#9acd32',
+      scale: 1,
+      zOffset: 0,
+      yOffset: 3.5,
+    },
+  ];
+
   private baseColors: BaseColorTheme = {
     darkGreenPlane: '#556b2f',
     mediumGreenPlane: '#6b8e23',

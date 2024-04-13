@@ -8,8 +8,10 @@ import {
 import { InteractionService } from 'src/app/shared/services/interaction.service';
 import { SceneService } from 'src/app/shared/services/scene.service';
 import {
+  Asset,
   ColorTheme,
   ConfigurationService,
+  PlaneConfig,
   SkyColorTheme,
   ThemeConfig,
 } from 'src/app/shared/services/configuration.service';
@@ -51,6 +53,8 @@ export class StageComponent implements OnInit, OnDestroy {
   ) {
     this.currentThemeConfig = this.configService.getTheme('meadow');
   }
+
+  // Define planes configuration outside the method if they are static
 
   ngOnInit(): void {
     this.rendererContainer.nativeElement.appendChild(
@@ -215,55 +219,34 @@ export class StageComponent implements OnInit, OnDestroy {
     assets: { url: string; yOffset: number }[],
     sceneService: SceneService
   ) {
-    // Define the planes and their properties
-    const planes = [
-      {
-        name: 'darkGreenPlane',
-        color: '#556b2f',
-        scale: 2,
-        zOffset: 0.2,
-        yOffset: 4,
-      },
-      {
-        name: 'mediumGreenPlane',
-        color: '#6b8e23',
-        scale: 1.5,
-        zOffset: 0.1,
-        yOffset: 3.7,
-      },
-      {
-        name: 'lightGreenPlane',
-        color: '#9acd32',
-        scale: 1,
-        zOffset: 0,
-        yOffset: 3.5,
-      },
-    ];
+    this.configService.planesConfig.forEach((plane) =>
+      this.addVegetationToPlane(plane, assets, sceneService)
+    );
+  }
 
-    Math.random();
+  private addVegetationToPlane(
+    plane: PlaneConfig,
+    assets: Asset[],
+    sceneService: SceneService
+  ) {
+    const numItems = Math.floor(Math.random() * 3) + 50;
+    for (let i = 0; i < numItems; i++) {
+      const asset = assets[Math.floor(Math.random() * assets.length)];
+      const position = new THREE.Vector3(
+        (Math.random() - 0.5) * 40,
+        asset.yOffset + plane.yOffset,
+        plane.zOffset
+      );
+      const size = new THREE.Vector2(plane.scale * 1.5, plane.scale);
 
-    planes.forEach((plane) => {
-      const numItems = Math.floor(Math.random() * 3) + 50; // Adjusted for example purposes
-
-      for (let i = 0; i < numItems; i++) {
-        const asset = assets[Math.floor(Math.random() * assets.length)];
-        const position = new THREE.Vector3(
-          (Math.random() - 0.5) * 40, // Random X within plane bounds
-          asset.yOffset + plane.yOffset, // Use the asset's unique yOffset
-          plane.zOffset // Ensure proper Z positioning for depth
-        );
-        const size = new THREE.Vector2(plane.scale * 1.5, plane.scale); // Scale size based on plane
-
-        // Add the decorative plane to the scene, parented to the current green plane
-        sceneService.addDecorativePlane(
-          asset.url, // Use the URL from the asset object
-          position,
-          size,
-          plane.color,
-          plane.name
-        );
-      }
-    });
+      sceneService.addDecorativePlane(
+        asset.url,
+        position,
+        size,
+        plane.color,
+        plane.name
+      );
+    }
   }
 
   private updateVegetationColors(): void {
