@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { ThreeService } from './three.service';
+import { StageMediatorService } from './stage-mediator.service';
 
-describe('ThreeService', () => {
-  let service: ThreeService;
+describe('StageMediatorService', () => {
+  let service: StageMediatorService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(ThreeService);
+    service = TestBed.inject(StageMediatorService);
   });
 
   it('should be created', () => {
