@@ -23,6 +23,8 @@ export class StageComponent implements OnInit, OnDestroy {
       this.stageMediatorService.getRendererDOM()
     );
     this.stageMediatorService.initializeStage();
+    this.stageMediatorService.addMouseMoveListener();
+    this.stageMediatorService.addModeToggleButton();
   }
 
   ngOnDestroy(): void {
