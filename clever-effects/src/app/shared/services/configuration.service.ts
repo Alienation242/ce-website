@@ -38,6 +38,14 @@ export interface ThemeConfig {
   dark: ColorTheme;
 }
 
+export type PlaneName =
+  | 'darkGreenPlane'
+  | 'mediumGreenPlane'
+  | 'lightGreenPlane'
+  | 'lightBlueSky'
+  | 'mediumBlueSky'
+  | 'darkBlueSky';
+
 type Themes = { [key in ThemeName]: ThemeConfig };
 
 @Injectable({
