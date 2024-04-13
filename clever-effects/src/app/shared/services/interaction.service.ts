@@ -37,17 +37,38 @@ export class InteractionService {
   }
 
   // Handles mouse move events, updating hover states and styles.
+  private handleHover(newHoveredObject: THREE.Object3D | null): void {
+    if (newHoveredObject !== this.hoveredObject) {
+      this.resetHoveredObject();
+      if (newHoveredObject) {
+        newHoveredObject.scale.set(1.1, 1.1, 1.1); // Scaling up for hover
+        this.renderer!.domElement.style.cursor = 'pointer'; // Set cursor to pointer
+        this.hoveredObject = newHoveredObject;
+      }
+    }
+  }
+
   public onMouseMove = (event: MouseEvent): void => {
     const mouse = this.calculateMousePosition(event);
-
     const intersects = this.getIntersections(mouse);
     if (intersects.length > 0) {
       this.handleHover(intersects[0].object);
     } else {
-      this.resetHoveredObject();
+      this.handleHover(null); // Reset hover if no intersections
     }
   };
 
+  private onMouseOut = (): void => {
+    this.resetHoveredObject(); // Make sure this resets hover state
+  };
+
+  private resetHoveredObject(): void {
+    if (this.hoveredObject) {
+      this.hoveredObject.scale.set(1, 1, 1); // Reset scaling
+      this.hoveredObject = null;
+    }
+    this.renderer!.domElement.style.cursor = 'auto'; // Reset cursor to default
+  }
   // Handles mouse click events, executing user-defined callbacks.
   private onMouseClick = (event: MouseEvent): void => {
     event.preventDefault();
@@ -57,12 +78,6 @@ export class InteractionService {
     if (intersects.length > 0 && intersects[0].object.userData['onClick']) {
       intersects[0].object.userData['onClick']();
     }
-  };
-
-  // Resets hover state and cursor when the mouse leaves the interactive area.
-  private onMouseOut = (): void => {
-    this.resetHoveredObject();
-    this.renderer!.domElement.style.cursor = 'auto';
   };
 
   // Helper function to calculate mouse position relative to the renderer's viewport.
@@ -81,23 +96,5 @@ export class InteractionService {
       this.sceneService.interactiveObjects,
       true
     );
-  }
-
-  // Handles updating the hover state, scaling objects to indicate hover.
-  private handleHover(newHoveredObject: THREE.Object3D): void {
-    if (this.hoveredObject !== newHoveredObject) {
-      this.resetHoveredObject();
-      this.hoveredObject = newHoveredObject;
-      this.hoveredObject.scale.set(1.1, 1.1, 1.1);
-      this.renderer!.domElement.style.cursor = 'pointer';
-    }
-  }
-
-  // Resets the hover state by scaling back the previously hovered object.
-  private resetHoveredObject(): void {
-    if (this.hoveredObject) {
-      this.hoveredObject.scale.set(1, 1, 1);
-      this.hoveredObject = null;
-    }
   }
 }
