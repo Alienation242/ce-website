@@ -54,26 +54,31 @@ export class StageComponent implements OnInit, OnDestroy {
     this.currentThemeConfig = this.configService.getTheme('meadow');
   }
 
-  // Define planes configuration outside the method if they are static
-
+  // Lifecycle hook that runs after Angular has initialized the component
   ngOnInit(): void {
+    // Appends the renderer DOM element to the container in the template
     this.rendererContainer.nativeElement.appendChild(
       this.sceneService.getRendererDOM()
     );
+    // Setup interaction handlers for the renderer and camera
     this.interactionService.setup(
       this.sceneService.getRenderer(),
       this.sceneService.getCamera()
     );
-
+    // Set up the 3D stage with planes and initial configurations
     this.setupStage();
+    // Add listener for mouse movement to create interactive effects
     this.addMouseMoveListener();
+    // Add a toggle button for switching themes
     this.addModeToggleButton('sun'); // Initialize with the sun icon for light mode
   }
 
+  // Sets up the initial state of the stage, adding colored planes and vegetation
   private setupStage(): void {
     const theme: ThemeConfig = this.currentThemeConfig;
     const themeColors = this.isDarkMode ? theme.dark : theme.light;
 
+    // Loop through each plane in the configuration and set up its appearance and position
     (Object.keys(this.initialPositions) as PlaneName[]).forEach((planeName) => {
       const { y, z } = this.initialPositions[planeName];
       const position = new THREE.Vector3(0, y, z);
@@ -93,6 +98,7 @@ export class StageComponent implements OnInit, OnDestroy {
       this.sceneService.addColoredPlane(color, position, size, planeName);
     });
 
+    // Populate the stage with vegetation
     this.populateWithVegetation(
       [
         { url: '../../assets/env/T_Grasspatch01.png', yOffset: 0 },
@@ -104,10 +110,12 @@ export class StageComponent implements OnInit, OnDestroy {
     );
   }
 
+  // Adds the mousemove event listener to the window object
   private addMouseMoveListener(): void {
     window.addEventListener('mousemove', this.handleMouseMove);
   }
 
+  // Handles mouse move events to create a parallax effect on the planes
   private handleMouseMove = (event: MouseEvent): void => {
     const centerX = window.innerWidth / 2;
     const centerY = window.innerHeight / 2;
@@ -132,6 +140,7 @@ export class StageComponent implements OnInit, OnDestroy {
     });
   };
 
+  // Adds a toggle button for switching between light and dark themes
   private addModeToggleButton(textureType: 'sun' | 'moon'): void {
     // Toggle between 'sun' and 'moon' textures
     const texturePath =
@@ -140,7 +149,7 @@ export class StageComponent implements OnInit, OnDestroy {
         : '../../assets/env/T_Moon.png';
     const onClickCallback = () => {
       this.isDarkMode = !this.isDarkMode;
-      this.toggleTheme();
+      this.toggleMode();
       this.sceneService.removeFromScene('modeToggle');
       this.addModeToggleButton(this.isDarkMode ? 'moon' : 'sun');
     };
@@ -153,7 +162,9 @@ export class StageComponent implements OnInit, OnDestroy {
       onClickCallback
     );
   }
-  toggleTheme(): void {
+
+  // Toggles the theme of the stage and updates the appearance accordingly
+  private toggleMode(): void {
     // Fetch the updated theme configuration based on the current state
     this.currentThemeConfig = this.configService.getTheme('meadow');
     const themeColors = this.isDarkMode
@@ -191,7 +202,8 @@ export class StageComponent implements OnInit, OnDestroy {
     });
   }
 
-  lerpColor(
+  // Linearly interpolates between colors over a given duration
+  private lerpColor(
     color: THREE.Color,
     targetColor: THREE.Color,
     duration: number
@@ -209,10 +221,6 @@ export class StageComponent implements OnInit, OnDestroy {
     };
 
     animate();
-  }
-
-  ngOnDestroy(): void {
-    window.removeEventListener('mousemove', this.handleMouseMove);
   }
 
   private populateWithVegetation(
@@ -249,25 +257,8 @@ export class StageComponent implements OnInit, OnDestroy {
     }
   }
 
-  private updateVegetationColors(): void {
-    const themeColors = this.isDarkMode
-      ? this.currentThemeConfig.dark
-      : this.currentThemeConfig.light;
-    // Update colors of decorative planes
-    const planes = ['darkGreenPlane', 'mediumGreenPlane', 'lightGreenPlane']; // List of parent planes
-    planes.forEach((planeName) => {
-      const parentPlane = this.sceneService
-        .getScene()
-        .getObjectByName(planeName);
-      if (parentPlane && parentPlane.children.length > 0) {
-        parentPlane.children.forEach((child) => {
-          if (child instanceof THREE.Mesh) {
-            (child.material as THREE.MeshBasicMaterial).color = new THREE.Color(
-              themeColors[planeName as keyof ColorTheme]
-            );
-          }
-        });
-      }
-    });
+  // Lifecycle hook that runs just before Angular destroys the component
+  ngOnDestroy(): void {
+    window.removeEventListener('mousemove', this.handleMouseMove);
   }
 }
