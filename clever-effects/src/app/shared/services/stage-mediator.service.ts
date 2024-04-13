@@ -134,6 +134,8 @@ export class StageMediatorService {
         ? '../../assets/env/T_Sun.png'
         : '../../assets/env/T_Moon.png';
 
+    this.sceneService.removeFromScene('modeToggle'); // Ensure removal before recreation
+
     const onClickCallback = () => {
       this.toggleMode();
       this.addModeToggleButton(); // Recreate button with new texture
