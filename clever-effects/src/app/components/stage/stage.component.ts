@@ -71,7 +71,7 @@ export class StageComponent implements OnInit, OnDestroy {
   }
 
   private setupStage(): void {
-    const theme: ThemeConfig = this.configService.getTheme('meadow');
+    const theme: ThemeConfig = this.currentThemeConfig;
     const themeColors = this.isDarkMode ? theme.dark : theme.light;
 
     (Object.keys(this.initialPositions) as PlaneName[]).forEach((planeName) => {
