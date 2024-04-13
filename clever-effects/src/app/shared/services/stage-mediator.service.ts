@@ -16,9 +16,10 @@ import {
   providedIn: 'root',
 })
 export class StageMediatorService {
-  private isDarkMode = false;
-  private currentThemeConfig: ThemeConfig;
+  private isDarkMode = false; // Tracks whether dark mode is enabled
+  private currentThemeConfig: ThemeConfig; // Stores the current theme configuration
   initialPositions: { [key in PlaneName]: { y: number; z: number } } = {
+    // Default positions for various planes in the 3D scene
     darkGreenPlane: { y: -7, z: -3 },
     mediumGreenPlane: { y: -5, z: -4 },
     lightGreenPlane: { y: -3, z: -5 },
@@ -32,14 +33,16 @@ export class StageMediatorService {
     private interactionService: InteractionService,
     private configService: ConfigurationService
   ) {
-    this.currentThemeConfig = this.configService.getTheme('meadow');
+    this.currentThemeConfig = this.configService.getTheme('meadow'); // Initialize the theme config
   }
 
   public getRendererDOM(): HTMLCanvasElement {
+    // Returns the renderer's DOM element for embedding in the Angular component
     return this.sceneService.getRendererDOM();
   }
 
   public initializeStage(): void {
+    // Sets up the renderer and camera, and configures the initial stage
     this.interactionService.setup(
       this.sceneService.getRenderer(),
       this.sceneService.getCamera()
@@ -48,6 +51,7 @@ export class StageMediatorService {
   }
 
   private setupStage(): void {
+    // Configures the initial setup of planes based on the current theme
     const theme: ThemeConfig = this.currentThemeConfig;
     const themeColors = this.isDarkMode ? theme.dark : theme.light;
 
@@ -75,12 +79,14 @@ export class StageMediatorService {
   }
 
   private populateWithVegetation(assets: Asset[]) {
+    // Adds vegetation to each plane using provided asset configurations
     this.configService.planesConfig.forEach((plane) =>
       this.addVegetationToPlane(plane, assets)
     );
   }
 
   private addVegetationToPlane(plane: PlaneConfig, assets: Asset[]) {
+    // Randomly places a specified number of vegetation assets on a plane
     const numItems = Math.floor(Math.random() * 3) + 50;
     for (let i = 0; i < numItems; i++) {
       const asset = assets[Math.floor(Math.random() * assets.length)];
@@ -102,23 +108,25 @@ export class StageMediatorService {
   }
 
   public addMouseMoveListener(): void {
+    // Adds a global mouse move listener to create interactive effects
     window.addEventListener('mousemove', this.handleMouseMove);
   }
 
   private handleMouseMove = (event: MouseEvent): void => {
+    // Handles mouse movement to adjust the position of planes for a parallax effect
     const centerX = window.innerWidth / 2;
     const centerY = window.innerHeight / 2;
-    const mouseX = (event.clientX - centerX) / centerX; // Normalize to range -1 to 1
-    const mouseY = (event.clientY - centerY) / centerY; // Normalize to range -1 to 1
+    const mouseX = (event.clientX - centerX) / centerX;
+    const mouseY = (event.clientY - centerY) / centerY;
 
     Object.keys(this.initialPositions).forEach((key) => {
-      const planeName = key as PlaneName; // Cast key to PlaneName
+      const planeName = key as PlaneName;
       const plane = this.initialPositions[planeName];
       const { y, z } = plane;
-      const depthFactor = 1 / Math.abs(z); // Smaller depth factor for farther objects
+      const depthFactor = 1 / Math.abs(z);
 
-      const newPositionX = mouseX * depthFactor * 10; // Scale movement horizontally
-      const newPositionY = y + mouseY * depthFactor * 4; // Scale movement vertically and adjust by the plane's base height
+      const newPositionX = mouseX * depthFactor * 10;
+      const newPositionY = y + mouseY * depthFactor * 4;
 
       this.sceneService.movePlane(
         planeName,
@@ -128,7 +136,8 @@ export class StageMediatorService {
   };
 
   public addModeToggleButton(): void {
-    const textureType = this.isDarkMode ? 'moon' : 'sun'; // Decide based on current theme
+    // Adds a toggle button for switching themes, ensuring it's recreated after each click
+    const textureType = this.isDarkMode ? 'moon' : 'sun';
     const texturePath =
       textureType === 'sun'
         ? '../../assets/env/T_Sun.png'
@@ -138,19 +147,20 @@ export class StageMediatorService {
 
     const onClickCallback = () => {
       this.toggleMode();
-      this.addModeToggleButton(); // Recreate button with new texture
+      this.addModeToggleButton();
     };
 
     this.sceneService.createInteractionBox(
-      'modeToggle', // Ensure this is used consistently and not duplicated
+      'modeToggle',
       texturePath,
-      '#ffffff', // Assuming a white tint for simplicity; adjust as needed
-      new THREE.Vector3(4, 2, 0), // Position in the upper right corner; adjust as needed
+      '#ffffff',
+      new THREE.Vector3(4, 2, 0),
       onClickCallback
     );
   }
 
   private toggleMode(): void {
+    // Toggles between light and dark themes and updates the scene accordingly
     this.isDarkMode = !this.isDarkMode;
     this.currentThemeConfig = this.configService.getTheme('meadow');
     const themeColors = this.isDarkMode
@@ -174,7 +184,6 @@ export class StageMediatorService {
         console.log(`Updating color of ${planeName} to ${newColor.getStyle()}`);
         this.lerpColor(plane.material.color, newColor, 0.2);
 
-        // Update decorative planes if it's a green plane
         if (!isSky) {
           plane.children.forEach((child) => {
             if (child instanceof THREE.Mesh) {
@@ -191,6 +200,7 @@ export class StageMediatorService {
     targetColor: THREE.Color,
     duration: number
   ): void {
+    // Smoothly transitions a color to the target color over the specified duration
     const startColor = color.clone();
     const startTime = Date.now();
 
@@ -209,6 +219,8 @@ export class StageMediatorService {
   }
 
   public destroy(): void {
-    // Add cleanup logic if needed
+    // Remove all event listeners and cleanup resources
+    window.removeEventListener('mousemove', this.handleMouseMove);
+    // Additional cleanup logic for other resources if necessary
   }
 }
