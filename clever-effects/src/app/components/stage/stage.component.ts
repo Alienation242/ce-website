@@ -234,7 +234,7 @@ export class StageComponent implements OnInit, OnDestroy {
       const asset = assets[Math.floor(Math.random() * assets.length)];
       const position = new THREE.Vector3(
         (Math.random() - 0.5) * 40,
-        asset.yOffset + plane.yOffset,
+        asset.yOffset + plane.vegetationYOffset,
         plane.zOffset
       );
       const size = new THREE.Vector2(plane.scale * 1.5, plane.scale);

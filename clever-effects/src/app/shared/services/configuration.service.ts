@@ -6,7 +6,7 @@ export interface PlaneConfig {
   color: string;
   scale: number;
   zOffset: number;
-  yOffset: number;
+  vegetationYOffset: number; // yOffset specific to vegetation
 }
 
 export interface Asset {
@@ -50,21 +50,21 @@ export class ConfigurationService {
       color: '#556b2f',
       scale: 2,
       zOffset: 0.2,
-      yOffset: 4,
+      vegetationYOffset: 4,
     },
     {
       name: 'mediumGreenPlane',
       color: '#6b8e23',
       scale: 1.5,
       zOffset: 0.1,
-      yOffset: 3.7,
+      vegetationYOffset: 3.7,
     },
     {
       name: 'lightGreenPlane',
       color: '#9acd32',
       scale: 1,
       zOffset: 0,
-      yOffset: 3.5,
+      vegetationYOffset: 3.5,
     },
   ];
 
