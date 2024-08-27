@@ -67,6 +67,8 @@ export class InteractionService {
 
     this.lastInteractionTime = now;
 
+    const yOffsetThreshold = 0.7; // This simulates the mouse being higher (0.5 means 50% towards the top)
+
     this.sceneService.getScene().children.forEach((planeGroup) => {
       if (!(planeGroup instanceof THREE.Group)) return;
 
@@ -76,11 +78,14 @@ export class InteractionService {
 
       const depthFactor = 1 / Math.abs(originalPosition.z);
 
-      const parallaxStrengthX = 5; // Adjust for lower parallax strength
-      const parallaxStrengthY = 5; // Adjust for lower parallax strength
+      const parallaxStrengthX = 1; // Adjust for lower parallax strength
+      const parallaxStrengthY = 1; // Adjust for lower parallax strength
 
       const targetX = this.lastMouseX * depthFactor * parallaxStrengthX;
-      const targetY = this.lastMouseY * depthFactor * parallaxStrengthY;
+
+      // Apply the yOffsetThreshold to simulate the mouse being higher
+      const adjustedMouseY = this.lastMouseY + yOffsetThreshold;
+      const targetY = adjustedMouseY * depthFactor * parallaxStrengthY;
 
       const smoothingFactor = 0.3; // Higher value for faster response
 
@@ -103,7 +108,11 @@ export class InteractionService {
 
       if (!planeGroup.name.includes('Sky')) {
         planeGroup.position.z += direction * 0.5; // Adjust the scroll speed
-        planeGroup.position.y += direction * 0.1; // Y offset for better plane management
+
+        const yScrollThreshold = 1 / 2; // Set the threshold ratio for Y-axis scrolling
+
+        // Adjust the Y offset with the threshold ratio for better plane management
+        planeGroup.position.y += direction * 0.1 * yScrollThreshold;
 
         // Update vegetation Z position to match plane's Z position
         planeGroup.children.forEach((child) => {
