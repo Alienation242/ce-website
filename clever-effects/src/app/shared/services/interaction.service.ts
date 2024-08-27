@@ -67,7 +67,7 @@ export class InteractionService {
 
     this.lastInteractionTime = now;
 
-    const yOffsetThreshold = 0.7; // This simulates the mouse being higher (0.5 means 50% towards the top)
+    const yOffsetThreshold = 0.9; // This simulates the mouse being higher (0.5 means 50% towards the top)
 
     this.sceneService.getScene().children.forEach((planeGroup) => {
       if (!(planeGroup instanceof THREE.Group)) return;

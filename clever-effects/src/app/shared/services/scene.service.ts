@@ -27,10 +27,13 @@ export class SceneService {
     darkBlueSky: { y: 7, z: -8 },
   };
 
+  public planesConfig: PlaneConfig[];
+
   constructor(
     private assetLoaderService: AssetLoaderService,
     private configService: ConfigurationService
   ) {
+    this.planesConfig = this.configService.planesConfig; // Initialize planesConfig from ConfigurationService
     this.initializeScene();
   }
 
@@ -310,8 +313,8 @@ export class SceneService {
     assets: Asset[],
     planeGroup: THREE.Group
   ): void {
-    const planeConfig = this.configService.planesConfig.find(
-      (p: PlaneConfig) => p.name === planeGroup.name.split('_')[0]
+    const planeConfig = this.planesConfig.find(
+      (p) => p.name === planeGroup.name.split('_')[0]
     );
     if (planeConfig) {
       this.addVegetationToPlane(planeConfig, assets, planeGroup);
@@ -326,11 +329,30 @@ export class SceneService {
     const numItems = 30; // Fixed number of vegetation for consistent appearance
     const vegetationObjects: THREE.Object3D[] = [];
 
+    // Cast the material to MeshBasicMaterial to access 'color'
+    const planeMesh = planeGroup.children[0] as THREE.Mesh;
+    const planeMaterial = planeMesh.material as THREE.MeshBasicMaterial;
+    const planeColor = planeMaterial.color.getHexString(); // Use plane's color
+
+    // New: Set a threshold for the Z position to avoid placing vegetation at the horizon
+    const horizonThresholdZ = -8.0; // Example threshold value for Z position
+
+    // Check if the plane's position is close to the horizon, skip vegetation
+    if (planeGroup.position.z <= horizonThresholdZ) {
+      console.log(
+        `Skipping vegetation for plane at Z: ${planeGroup.position.z}`
+      );
+      return;
+    }
+
+    // Adjust the vertical offset to raise the vegetation a bit higher
+    const vegetationVerticalOffset = 0.2; // Adjust this value as needed
+
     for (let i = 0; i < numItems; i++) {
       const asset = assets[Math.floor(Math.random() * assets.length)];
       const position = new THREE.Vector3(
         (Math.random() - 0.5) * 40, // Randomly distributed along the X-axis
-        asset.yOffset + plane.vegetationYOffset, // Y-position based on plane config
+        asset.yOffset + plane.vegetationYOffset + vegetationVerticalOffset, // Y-position adjusted to raise vegetation
         0 // Z-position set to 0 relative to planeGroup
       );
       const size = new THREE.Vector2(plane.scale * 1.5, plane.scale);
@@ -339,7 +361,7 @@ export class SceneService {
         asset.url,
         position,
         size,
-        plane.color,
+        `#${planeColor}`, // Apply the plane's color to vegetation
         planeGroup.name
       ).then((vegObject) => {
         if (vegObject) {
