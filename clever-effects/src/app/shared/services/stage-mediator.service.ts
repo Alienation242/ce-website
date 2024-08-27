@@ -25,6 +25,9 @@ export class StageMediatorService {
   private lastMouseX: number = window.innerWidth / 2;
   private lastMouseY: number = window.innerHeight / 2;
 
+  private lastInteractionTime = 0;
+  private interactionDebounceTime = 24; // Adjust this debounce time to reduce lag
+
   initialPositions: { [key in PlaneName]: { y: number; z: number } } = {
     darkGreenPlane: { y: -5, z: -2 }, // Lower starting Y position
     mediumGreenPlane: { y: -4, z: -2.5 }, // Lower starting Y position
@@ -214,23 +217,28 @@ export class StageMediatorService {
   }
 
   private applyParallax(): void {
+    const now = Date.now();
+
+    if (now - this.lastInteractionTime < this.interactionDebounceTime) {
+      return; // Skip if interaction is happening too quickly
+    }
+
+    this.lastInteractionTime = now;
+
     this.planeGroups.forEach((planeGroup, planeName) => {
       const basePlaneName = planeName.split('_')[0] as PlaneName;
       const originalPosition = this.initialPositions[basePlaneName];
 
       const depthFactor = 1 / Math.abs(originalPosition.z);
 
-      // Increase these factors for a faster parallax effect
-      const parallaxStrengthX = 8; // Adjust for stronger/weaker parallax effect
-      const parallaxStrengthY = 8; // Adjust for stronger/weaker parallax effect
+      const parallaxStrengthX = 10; // Increased for more responsive parallax
+      const parallaxStrengthY = 10; // Increased for more responsive parallax
 
       const targetX = this.lastMouseX * depthFactor * parallaxStrengthX;
       const targetY = this.lastMouseY * depthFactor * parallaxStrengthY;
 
-      // Reduce the smoothing factor for quicker response (e.g., 0.2 to 0.3 for faster movement)
-      const smoothingFactor = 0.2; // Increase this value for faster response, decrease for slower, smoother
+      const smoothingFactor = 0.3; // Higher value for faster response
 
-      // Smooth transition with reduced smoothing for faster movement
       planeGroup.position.x +=
         (targetX - planeGroup.position.x) * smoothingFactor;
       planeGroup.position.y +=
@@ -238,7 +246,6 @@ export class StageMediatorService {
         smoothingFactor;
     });
 
-    // Render the scene after applying parallax effect
     this.sceneService
       .getRenderer()
       .render(this.sceneService.getScene(), this.sceneService.getCamera());
