@@ -58,21 +58,21 @@ export class ConfigurationService {
       color: '#556b2f',
       scale: 2,
       zOffset: 0,
-      vegetationYOffset: 1.2,
+      vegetationYOffset: 0.2,
     },
     {
       name: 'mediumGreenPlane',
       color: '#6b8e23',
       scale: 1.5,
       zOffset: 0,
-      vegetationYOffset: 1.5,
+      vegetationYOffset: 1,
     },
     {
       name: 'lightGreenPlane',
       color: '#9acd32',
       scale: 1,
       zOffset: 0,
-      vegetationYOffset: 2,
+      vegetationYOffset: 1,
     },
   ];
 
