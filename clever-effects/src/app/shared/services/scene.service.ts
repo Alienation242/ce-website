@@ -1,6 +1,13 @@
 import { Injectable } from '@angular/core';
 import * as THREE from 'three';
 import { AssetLoaderService } from './asset-loader.service';
+import {
+  PlaneName,
+  ColorTheme,
+  PlaneConfig,
+  Asset,
+  ConfigurationService,
+} from './configuration.service';
 
 @Injectable({
   providedIn: 'root',
@@ -11,7 +18,19 @@ export class SceneService {
   private renderer!: THREE.WebGLRenderer;
   public interactiveObjects: THREE.Mesh[] = []; // Store interactive objects here
 
-  constructor(private assetLoaderService: AssetLoaderService) {
+  public initialPositions: { [key in PlaneName]: { y: number; z: number } } = {
+    darkGreenPlane: { y: -5, z: -2 },
+    mediumGreenPlane: { y: -4, z: -2.5 },
+    lightGreenPlane: { y: -3, z: -3 },
+    lightBlueSky: { y: 3, z: -10 },
+    mediumBlueSky: { y: 5, z: -9 },
+    darkBlueSky: { y: 7, z: -8 },
+  };
+
+  constructor(
+    private assetLoaderService: AssetLoaderService,
+    private configService: ConfigurationService
+  ) {
     this.initializeScene();
   }
 
@@ -50,29 +69,21 @@ export class SceneService {
   };
 
   private onWindowResize = (): void => {
-    // Define the desired aspect ratio
     const aspectRatio = 16 / 9;
-
-    // Calculate the aspect ratio based on the window size
     let width = window.innerWidth;
     let height = window.innerHeight;
     const windowAspectRatio = width / height;
 
-    // Adjust width and height to maintain the aspect ratio
     if (windowAspectRatio > aspectRatio) {
-      // If the window is too wide, adjust the width to maintain the aspect ratio
       width = height * aspectRatio;
     } else {
-      // If the window is too tall, adjust the height to maintain the aspect ratio
       height = width / aspectRatio;
     }
 
-    // Update the renderer and camera with the new dimensions
     this.renderer.setSize(width, height);
     this.camera.aspect = aspectRatio;
     this.camera.updateProjectionMatrix();
 
-    // Optionally, center the canvas if it doesn't fill the window
     const canvas = this.renderer.domElement;
     canvas.style.position = 'absolute';
     canvas.style.top = `${(window.innerHeight - height) / 2}px`;
@@ -102,8 +113,7 @@ export class SceneService {
   public removeFromScene(objectName: string): void {
     const object = this.scene.getObjectByName(objectName);
     if (object) {
-      object.parent?.remove(object); // Remove object from its parent
-      // If the object is also part of interactiveObjects, remove it from there too
+      object.parent?.remove(object);
       const index = this.interactiveObjects.findIndex(
         (obj) => obj.name === objectName
       );
@@ -128,7 +138,7 @@ export class SceneService {
     const plane = new THREE.Mesh(geometry, material);
     plane.position.copy(position);
     plane.name = name;
-    parentGroup.add(plane); // Add plane to the parent group
+    parentGroup.add(plane);
   }
 
   public addDecorativePlane(
@@ -163,7 +173,7 @@ export class SceneService {
   public addObjectToPlane(object: THREE.Object3D, planeName: string): void {
     const plane = this.scene.getObjectByName(planeName);
     if (plane) {
-      plane.add(object); // This sets the plane as the parent of the object
+      plane.add(object);
     }
   }
 
@@ -178,8 +188,7 @@ export class SceneService {
     const plane = this.scene.getObjectByName(planeName);
     if (plane instanceof THREE.Mesh) {
       const material = plane.material as THREE.MeshBasicMaterial;
-      material.color.set(highlight ? 0xff0000 : 0x00ff00); // Example: Red on highlight, green otherwise
-      // Ensure the scene is updated if necessary
+      material.color.set(highlight ? 0xff0000 : 0x00ff00);
     }
   }
 
@@ -204,7 +213,6 @@ export class SceneService {
         plane.position.copy(position);
         plane.name = name;
 
-        // Make the plane interactive
         plane.userData = { onClick: onClickCallback };
         this.interactiveObjects.push(plane);
 
@@ -223,14 +231,132 @@ export class SceneService {
   public toggleTheme(isDarkMode: boolean): void {
     // Your existing logic to switch between themes
     if (isDarkMode) {
-      // Logic for setting dark theme colors
       console.log('Switching to dark theme');
     } else {
-      // Logic for setting light theme colors
       console.log('Switching to light theme');
     }
-    // Possibly update other scene elements or global state as needed
   }
 
-  // Add additional helper methods as necessary...
+  // New method to add mode toggle button
+  public addModeToggleButton(): void {
+    const textureType = 'sun'; // This would toggle based on a condition
+    const texturePath =
+      textureType === 'sun'
+        ? '../../assets/env/T_Sun.png'
+        : '../../assets/env/T_Moon.png';
+
+    this.removeFromScene('modeToggle');
+
+    const onClickCallback = () => {
+      this.toggleTheme(true);
+      this.addModeToggleButton();
+    };
+
+    this.createInteractionBox(
+      'modeToggle',
+      texturePath,
+      '#ffffff',
+      new THREE.Vector3(4, 2, 0),
+      onClickCallback
+    );
+  }
+
+  public interpolateColor(factor: number): string {
+    const themeColors: ColorTheme = {
+      lightGreenPlane: '#9acd32',
+      mediumGreenPlane: '#6b8e23',
+      darkGreenPlane: '#556b2f',
+      sky: {
+        lightBlueSky: '#add8e6',
+        mediumBlueSky: '#87ceeb',
+        darkBlueSky: '#00bfff',
+      },
+    };
+
+    const lightColor = new THREE.Color(themeColors['lightGreenPlane']);
+    const mediumColor = new THREE.Color(themeColors['mediumGreenPlane']);
+    const darkColor = new THREE.Color(themeColors['darkGreenPlane']);
+
+    let color;
+    if (factor <= 0.5) {
+      color = lightColor.clone().lerp(mediumColor, factor * 2);
+    } else {
+      color = mediumColor.clone().lerp(darkColor, (factor - 0.5) * 2);
+    }
+
+    return `#${color.getHexString()}`;
+  }
+
+  public updatePlaneColor(planeGroup: THREE.Group, color: string): void {
+    planeGroup.children.forEach((child) => {
+      if (child instanceof THREE.Mesh) {
+        const material = child.material as THREE.MeshBasicMaterial;
+        material.color.set(color);
+      }
+    });
+  }
+
+  public clearVegetationFromPlane(planeGroup: THREE.Group): void {
+    const vegetationObjects =
+      this.scene.getObjectByName(planeGroup.name)?.children || [];
+
+    vegetationObjects.forEach((obj) => {
+      if (obj.name.startsWith('vegetation_')) {
+        this.removeFromScene(obj.name); // Assuming this method removes an object from the scene
+      }
+    });
+  }
+  public populateWithVegetation(
+    assets: Asset[],
+    planeGroup: THREE.Group
+  ): void {
+    const planeConfig = this.configService.planesConfig.find(
+      (p: PlaneConfig) => p.name === planeGroup.name.split('_')[0]
+    );
+    if (planeConfig) {
+      this.addVegetationToPlane(planeConfig, assets, planeGroup);
+    }
+  }
+
+  private addVegetationToPlane(
+    plane: PlaneConfig,
+    assets: Asset[],
+    planeGroup: THREE.Group
+  ): void {
+    const numItems = 30; // Fixed number of vegetation for consistent appearance
+    const vegetationObjects: THREE.Object3D[] = [];
+
+    for (let i = 0; i < numItems; i++) {
+      const asset = assets[Math.floor(Math.random() * assets.length)];
+      const position = new THREE.Vector3(
+        (Math.random() - 0.5) * 40, // Randomly distributed along the X-axis
+        asset.yOffset + plane.vegetationYOffset, // Y-position based on plane config
+        0 // Z-position set to 0 relative to planeGroup
+      );
+      const size = new THREE.Vector2(plane.scale * 1.5, plane.scale);
+
+      this.addDecorativePlane(
+        asset.url,
+        position,
+        size,
+        plane.color,
+        planeGroup.name
+      ).then((vegObject) => {
+        if (vegObject) {
+          vegObject.position.set(position.x, position.y, position.z); // Ensure proper local positioning
+          planeGroup.add(vegObject);
+          vegetationObjects.push(vegObject);
+        }
+      });
+    }
+  }
+
+  public generateVegetationAssets(): Asset[] {
+    return [
+      { url: '../../assets/env/T_Grasspatch01.png', yOffset: 0 },
+      { url: '../../assets/env/T_Grasspatch02.png', yOffset: 0 },
+      { url: '../../assets/env/T_Grasspatch03.png', yOffset: 0 },
+      { url: '../../assets/env/T_Grasspatch04.png', yOffset: 0 },
+    ];
+  }
 }

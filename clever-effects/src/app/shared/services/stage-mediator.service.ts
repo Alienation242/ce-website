@@ -20,13 +20,6 @@ export class StageMediatorService {
   private currentThemeConfig: ThemeConfig;
   private planeGroups: Map<string, THREE.Group> = new Map(); // Use string as the key type
   private vegetationMap: Map<string, THREE.Object3D[]> = new Map(); // Track vegetation objects per plane
-  private scrollOffset = 0; // Tracks how far we've scrolled
-
-  private lastMouseX: number = window.innerWidth / 2;
-  private lastMouseY: number = window.innerHeight / 2;
-
-  private lastInteractionTime = 0;
-  private interactionDebounceTime = 24; // Adjust this debounce time to reduce lag
 
   initialPositions: { [key in PlaneName]: { y: number; z: number } } = {
     darkGreenPlane: { y: -5, z: -2 }, // Lower starting Y position
@@ -43,17 +36,13 @@ export class StageMediatorService {
     private configService: ConfigurationService
   ) {
     this.currentThemeConfig = this.configService.getTheme('meadow'); // Initialize the theme config
-    window.addEventListener('wheel', this.onMouseWheel); // Add wheel event listener
-    window.addEventListener('mousemove', this.onMouseMove); // Add mouse move event listener
   }
 
   public getRendererDOM(): HTMLCanvasElement {
-    // Returns the renderer's DOM element for embedding in the Angular component
     return this.sceneService.getRendererDOM();
   }
 
   public initializeStage(): void {
-    // Sets up the renderer and camera, and configures the initial stage
     this.interactionService.setup(
       this.sceneService.getRenderer(),
       this.sceneService.getCamera()
@@ -61,74 +50,36 @@ export class StageMediatorService {
     this.setupStage();
   }
 
-  private trackMouse(event: MouseEvent): void {
-    this.lastMouseX = event.clientX;
-    this.lastMouseY = event.clientY;
-  }
-
-  private onMouseMove = (event: MouseEvent): void => {
-    // Calculate normalized mouse position
-    this.lastMouseX = (event.clientX / window.innerWidth) * 2 - 1;
-    this.lastMouseY = -(event.clientY / window.innerHeight) * 2 + 1;
-
-    // Apply parallax effect based on the new mouse position
-    this.applyParallax();
-  };
-
-  private onMouseWheel = (event: WheelEvent): void => {
-    const direction = event.deltaY > 0 ? 1 : -1; // Determine scroll direction
-    this.scrollOffset += direction * 0.5; // Update scroll offset
-    this.scrollLandscape(direction);
-
-    // Apply parallax effect after scrolling
-    this.applyParallax();
-  };
-
-  private generateVegetationAssets(): Asset[] {
-    return [
-      { url: '../../assets/env/T_Grasspatch01.png', yOffset: 0 },
-      { url: '../../assets/env/T_Grasspatch02.png', yOffset: 0 },
-      { url: '../../assets/env/T_Grasspatch03.png', yOffset: 0 },
-      { url: '../../assets/env/T_Grasspatch04.png', yOffset: 0 },
-    ];
-  }
-
   private setupStage(): void {
     const theme: ThemeConfig = this.currentThemeConfig;
     const themeColors = this.isDarkMode ? theme.dark : theme.light;
-
-    // Define the number of ground planes to generate
     const numberOfGroundPlanes = 16;
 
     for (let i = 0; i < numberOfGroundPlanes; i++) {
       (Object.keys(this.initialPositions) as PlaneName[]).forEach(
         (planeName) => {
           const { y, z } = this.initialPositions[planeName];
-
-          // Calculate the initial Z position for each plane
           const initialZPosition = z - i * 1.5; // Space out planes by 1.5 units
 
           const position = new THREE.Vector3(0, y, initialZPosition);
           const size = planeName.includes('Sky')
-            ? new THREE.Vector2(300, 24) // Adjust sky planes size for visibility
-            : new THREE.Vector2(100, 6); // Ground planes size
+            ? new THREE.Vector2(300, 24)
+            : new THREE.Vector2(100, 6);
 
           const colorKey = planeName as keyof ColorTheme;
           const color = planeName.includes('Sky')
             ? themeColors['sky'][colorKey]
             : themeColors[colorKey];
 
-          // Correctly calculate initial color based on Z position
-          const colorTransitionFactor = (initialZPosition + 8) / 16; // Normalize Z position for color interpolation
+          const colorTransitionFactor = (initialZPosition + 8) / 16;
           const initialColor = this.interpolateColor(colorTransitionFactor);
 
-          // Create a group for each plane
           const planeGroup = new THREE.Group();
           planeGroup.position.set(0, y, initialZPosition);
-          planeGroup.name = `${planeName}_${i}`; // Unique name for each plane instance
+          planeGroup.name = `${planeName}_${i}`;
 
           this.sceneService.addColoredPlane(
-            initialColor, // Use calculated color
+            initialColor,
             position,
             size,
             planeGroup.name as PlaneName,
@@ -137,7 +88,7 @@ export class StageMediatorService {
 
           if (!planeName.includes('Sky')) {
             const assets = this.generateVegetationAssets();
-            this.populateWithVegetation(assets, planeGroup); // Populate each ground plane with vegetation
+            this.populateWithVegetation(assets, planeGroup);
           }
 
           this.sceneService.addToScene(planeGroup);
@@ -146,13 +97,11 @@ export class StageMediatorService {
       );
     }
 
-    // Ensure sky planes are always visible and correctly positioned
     (Object.keys(this.initialPositions) as PlaneName[]).forEach((planeName) => {
       if (planeName.includes('Sky')) {
         const { y, z } = this.initialPositions[planeName];
         const position = new THREE.Vector3(0, y, z);
-        const size = new THREE.Vector2(300, 24); // Larger size for the sky
-
+        const size = new THREE.Vector2(300, 24);
         const color = themeColors['sky'][planeName as keyof SkyColorTheme];
 
         const planeGroup = new THREE.Group();
@@ -173,92 +122,7 @@ export class StageMediatorService {
     });
   }
 
-  private scrollLandscape(direction: number): void {
-    this.planeGroups.forEach((planeGroup, planeName) => {
-      if (!planeName.includes('Sky')) {
-        // Only move ground planes
-        planeGroup.position.z += direction * 0.5; // Adjust the scroll speed
-        planeGroup.position.y += direction * 0.1; // Y offset for better plane management
-
-        // Update vegetation Z position to match plane's Z position
-        planeGroup.children.forEach((child) => {
-          if (child instanceof THREE.Mesh) {
-            child.position.z = 0; // Keep vegetation at the same local Z relative to the plane
-          }
-        });
-
-        // Reposition planes earlier to avoid empty horizon
-        if (planeGroup.position.z > 8) {
-          this.clearVegetationFromPlane(planeGroup);
-          planeGroup.position.z -= 12 * 1.5; // Reposition further back to maintain continuity
-          planeGroup.position.y =
-            this.initialPositions[planeName.split('_')[0] as PlaneName].y; // Reset Y to the original position
-          this.populateWithVegetation(
-            this.generateVegetationAssets(),
-            planeGroup
-          );
-        } else if (planeGroup.position.z < -8) {
-          this.clearVegetationFromPlane(planeGroup);
-          planeGroup.position.z += 12 * 1.5; // Reposition further ahead to maintain continuity
-          planeGroup.position.y =
-            this.initialPositions[planeName.split('_')[0] as PlaneName].y; // Reset Y to the original position
-          this.populateWithVegetation(
-            this.generateVegetationAssets(),
-            planeGroup
-          );
-        }
-
-        // Correct color update after repositioning
-        const colorTransitionFactor = (planeGroup.position.z + 8) / 16; // Normalize Z position for color interpolation
-        const color = this.interpolateColor(colorTransitionFactor);
-        this.updatePlaneColor(planeGroup, color);
-      }
-    });
-  }
-
-  private applyParallax(): void {
-    const now = Date.now();
-
-    if (now - this.lastInteractionTime < this.interactionDebounceTime) {
-      return; // Skip if interaction is happening too quickly
-    }
-
-    this.lastInteractionTime = now;
-
-    this.planeGroups.forEach((planeGroup, planeName) => {
-      const basePlaneName = planeName.split('_')[0] as PlaneName;
-      const originalPosition = this.initialPositions[basePlaneName];
-
-      const depthFactor = 1 / Math.abs(originalPosition.z);
-
-      const parallaxStrengthX = 10; // Increased for more responsive parallax
-      const parallaxStrengthY = 10; // Increased for more responsive parallax
-
-      const targetX = this.lastMouseX * depthFactor * parallaxStrengthX;
-      const targetY = this.lastMouseY * depthFactor * parallaxStrengthY;
-
-      const smoothingFactor = 0.3; // Higher value for faster response
-
-      planeGroup.position.x +=
-        (targetX - planeGroup.position.x) * smoothingFactor;
-      planeGroup.position.y +=
-        (originalPosition.y + targetY - planeGroup.position.y) *
-        smoothingFactor;
-    });
-
-    this.sceneService
-      .getRenderer()
-      .render(this.sceneService.getScene(), this.sceneService.getCamera());
-  }
-
-  private clearVegetationFromPlane(planeGroup: THREE.Group): void {
-    const vegetation = this.vegetationMap.get(planeGroup.name);
-    if (vegetation) {
-      vegetation.forEach((obj) => this.sceneService.removeFromScene(obj.name));
-      this.vegetationMap.set(planeGroup.name, []); // Reset vegetation array
-    }
-  }
-  private interpolateColor(factor: number): string {
+  public interpolateColor(factor: number): string {
     const theme = this.isDarkMode
       ? this.currentThemeConfig.dark
       : this.currentThemeConfig.light;
@@ -269,24 +133,30 @@ export class StageMediatorService {
 
     let color;
     if (factor <= 0.5) {
-      // Interpolate between lightGreenPlane and mediumGreenPlane
       color = lightColor.clone().lerp(mediumColor, factor * 2);
     } else {
-      // Interpolate between mediumGreenPlane and darkGreenPlane
       color = mediumColor.clone().lerp(darkColor, (factor - 0.5) * 2);
     }
 
     return `#${color.getHexString()}`;
   }
 
-  private updatePlaneColor(planeGroup: THREE.Group, color: string): void {
-    console.log(`Updating color for ${planeGroup.name} to ${color}`);
+  public updatePlaneColor(planeGroup: THREE.Group, color: string): void {
     planeGroup.children.forEach((child) => {
       if (child instanceof THREE.Mesh) {
         const material = child.material as THREE.MeshBasicMaterial;
         material.color.set(color);
       }
     });
+  }
+
+  private generateVegetationAssets(): Asset[] {
+    return [
+      { url: '../../assets/env/T_Grasspatch01.png', yOffset: 0 },
+      { url: '../../assets/env/T_Grasspatch02.png', yOffset: 0 },
+      { url: '../../assets/env/T_Grasspatch03.png', yOffset: 0 },
+      { url: '../../assets/env/T_Grasspatch04.png', yOffset: 0 },
+    ];
   }
 
   private populateWithVegetation(assets: Asset[], planeGroup: THREE.Group) {
@@ -335,34 +205,27 @@ export class StageMediatorService {
     this.vegetationMap.set(planeGroup.name, vegetationObjects);
   }
 
-  public addMouseMoveListener(): void {
-    // Adds a global mouse move listener to create interactive effects
-    window.addEventListener('mousemove', this.handleMouseMove);
-  }
-
-  private handleMouseMove = (event: MouseEvent): void => {
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
-    const mouseX = (event.clientX - centerX) / centerX;
-    const mouseY = (event.clientY - centerY) / centerY;
+  public toggleMode(): void {
+    this.isDarkMode = !this.isDarkMode;
+    this.currentThemeConfig = this.configService.getTheme('meadow');
+    const themeColors = this.isDarkMode
+      ? this.currentThemeConfig.dark
+      : this.currentThemeConfig.light;
 
     this.planeGroups.forEach((planeGroup, planeName) => {
-      const basePlaneName = planeName.split('_')[0] as PlaneName;
-      const originalPosition = this.initialPositions[basePlaneName];
+      const colorKey = planeName.split('_')[0] as keyof ColorTheme;
+      const colorSource = planeName.includes('Sky')
+        ? themeColors['sky']
+        : themeColors;
+      const newColor = new THREE.Color(colorSource[colorKey]);
 
-      const depthFactor = 1 / Math.abs(originalPosition.z);
-      const newPositionX = mouseX * depthFactor * 10;
-      const newPositionY = originalPosition.y + mouseY * depthFactor * 1.5;
-
-      planeGroup.position.x = newPositionX;
-      planeGroup.position.y = newPositionY;
+      planeGroup.children.forEach((child) => {
+        if (child instanceof THREE.Mesh) {
+          (child.material as THREE.MeshBasicMaterial).color.set(newColor);
+        }
+      });
     });
-
-    // Update the renderer after applying parallax
-    this.sceneService
-      .getRenderer()
-      .render(this.sceneService.getScene(), this.sceneService.getCamera());
-  };
+  }
 
   public addModeToggleButton(): void {
     const textureType = this.isDarkMode ? 'moon' : 'sun';
@@ -387,50 +250,7 @@ export class StageMediatorService {
     );
   }
 
-  private toggleMode(): void {
-    this.isDarkMode = !this.isDarkMode;
-    this.currentThemeConfig = this.configService.getTheme('meadow');
-    const themeColors = this.isDarkMode
-      ? this.currentThemeConfig.dark
-      : this.currentThemeConfig.light;
-
-    this.planeGroups.forEach((planeGroup, planeName) => {
-      const colorKey = planeName.split('_')[0] as keyof ColorTheme;
-      const colorSource = planeName.includes('Sky')
-        ? themeColors['sky']
-        : themeColors;
-      const newColor = new THREE.Color(colorSource[colorKey]);
-
-      planeGroup.children.forEach((child) => {
-        if (child instanceof THREE.Mesh) {
-          (child.material as THREE.MeshBasicMaterial).color.set(newColor);
-        }
-      });
-    });
-  }
-
-  private lerpColor(
-    color: THREE.Color,
-    targetColor: THREE.Color,
-    duration: number
-  ): void {
-    const startColor = color.clone();
-    const startTime = Date.now();
-
-    const animate = () => {
-      const elapsedTime = Date.now() - startTime;
-      const t = Math.min(elapsedTime / (duration * 1000), 1);
-      color.lerpColors(startColor, targetColor, t);
-      if (t < 1) {
-        requestAnimationFrame(animate);
-      }
-    };
-
-    requestAnimationFrame(animate);
-  }
-
   public destroy(): void {
-    window.removeEventListener('mousemove', this.handleMouseMove);
-    window.removeEventListener('wheel', this.onMouseWheel);
+    this.interactionService.cleanup();
   }
 }
