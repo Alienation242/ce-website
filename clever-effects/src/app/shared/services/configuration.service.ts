@@ -65,14 +65,14 @@ export class ConfigurationService {
       color: '#6b8e23',
       scale: 1.5,
       zOffset: 0,
-      vegetationYOffset: 1,
+      vegetationYOffset: 0,
     },
     {
       name: 'lightGreenPlane',
       color: '#9acd32',
       scale: 1,
       zOffset: 0,
-      vegetationYOffset: 1,
+      vegetationYOffset: 0.2,
     },
   ];
 

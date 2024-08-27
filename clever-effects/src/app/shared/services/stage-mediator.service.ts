@@ -18,7 +18,7 @@ import {
 export class StageMediatorService {
   private isDarkMode = false; // Tracks whether dark mode is enabled
   private currentThemeConfig: ThemeConfig;
-  private planeGroups: Map<PlaneName, THREE.Group> = new Map(); // Track groups of planes for easy manipulation
+  private planeGroups: Map<string, THREE.Group> = new Map(); // Use string as the key type
   private vegetationMap: Map<string, THREE.Object3D[]> = new Map(); // Track vegetation objects per plane
   private scrollOffset = 0; // Tracks how far we've scrolled
 
@@ -73,40 +73,75 @@ export class StageMediatorService {
     const theme: ThemeConfig = this.currentThemeConfig;
     const themeColors = this.isDarkMode ? theme.dark : theme.light;
 
-    (Object.keys(this.initialPositions) as PlaneName[]).forEach((planeName) => {
-      const { y, z } = this.initialPositions[planeName];
-      const position = new THREE.Vector3(0, y, z);
+    // Define the number of ground planes to generate
+    const numberOfGroundPlanes = 12;
 
-      // Adjust size based on whether it's a sky or ground plane
-      const size = planeName.includes('Sky')
-        ? new THREE.Vector2(300, 24) // Make sky planes larger for a 1:4 ratio
-        : new THREE.Vector2(100, 6); // Ground planes remain the same
+    for (let i = 0; i < numberOfGroundPlanes; i++) {
+      (Object.keys(this.initialPositions) as PlaneName[]).forEach(
+        (planeName) => {
+          const { y, z } = this.initialPositions[planeName];
 
-      const colorKey = planeName as keyof ColorTheme;
-      const color = planeName.includes('Sky')
-        ? themeColors['sky'][colorKey]
-        : themeColors[colorKey];
+          // Calculate the initial Z position for each plane
+          const initialZPosition = z - i * 1.5; // Space out planes by 1.5 units
 
-      // Create a group for each plane
-      const planeGroup = new THREE.Group();
-      planeGroup.position.set(0, y, z);
-      planeGroup.name = planeName;
+          const position = new THREE.Vector3(0, y, initialZPosition);
+          const size = planeName.includes('Sky')
+            ? new THREE.Vector2(300, 24) // Adjust sky planes size for visibility
+            : new THREE.Vector2(100, 6); // Ground planes size
 
-      this.sceneService.addColoredPlane(
-        color,
-        position,
-        size,
-        planeName,
-        planeGroup
+          const colorKey = planeName as keyof ColorTheme;
+          const color = planeName.includes('Sky')
+            ? themeColors['sky'][colorKey]
+            : themeColors[colorKey];
+
+          // Create a group for each plane
+          const planeGroup = new THREE.Group();
+          planeGroup.position.set(0, y, initialZPosition);
+          planeGroup.name = `${planeName}_${i}`; // Unique name for each plane instance
+
+          this.sceneService.addColoredPlane(
+            color,
+            position,
+            size,
+            planeGroup.name as PlaneName,
+            planeGroup
+          );
+
+          if (!planeName.includes('Sky')) {
+            const assets = this.generateVegetationAssets();
+            this.populateWithVegetation(assets, planeGroup); // Populate each ground plane with vegetation
+          }
+
+          this.sceneService.addToScene(planeGroup);
+          this.planeGroups.set(planeGroup.name, planeGroup);
+        }
       );
+    }
 
-      if (!planeName.includes('Sky')) {
-        const assets = this.generateVegetationAssets();
-        this.populateWithVegetation(assets, planeGroup); // Pass the correct group
+    // Ensure sky planes are always visible and correctly positioned
+    (Object.keys(this.initialPositions) as PlaneName[]).forEach((planeName) => {
+      if (planeName.includes('Sky')) {
+        const { y, z } = this.initialPositions[planeName];
+        const position = new THREE.Vector3(0, y, z);
+        const size = new THREE.Vector2(300, 24); // Larger size for the sky
+
+        const color = themeColors['sky'][planeName as keyof SkyColorTheme];
+
+        const planeGroup = new THREE.Group();
+        planeGroup.position.set(0, y, z);
+        planeGroup.name = planeName;
+
+        this.sceneService.addColoredPlane(
+          color,
+          position,
+          size,
+          planeGroup.name as PlaneName,
+          planeGroup
+        );
+
+        this.sceneService.addToScene(planeGroup);
+        this.planeGroups.set(planeGroup.name, planeGroup);
       }
-
-      this.sceneService.addToScene(planeGroup);
-      this.planeGroups.set(planeName, planeGroup);
     });
   }
 
@@ -125,20 +160,20 @@ export class StageMediatorService {
         });
 
         // Reposition planes earlier to avoid empty horizon
-        if (planeGroup.position.z > 6) {
-          // Despawn and respawn earlier
+        if (planeGroup.position.z > 8) {
           this.clearVegetationFromPlane(planeGroup);
-          planeGroup.position.z = -6; // Reposition slightly back for smooth transition
-          planeGroup.position.y = this.initialPositions[planeName].y; // Reset Y to the original position
+          planeGroup.position.z -= 12 * 1.5; // Reposition further back to maintain continuity
+          planeGroup.position.y =
+            this.initialPositions[planeName.split('_')[0] as PlaneName].y; // Reset Y to the original position
           this.populateWithVegetation(
             this.generateVegetationAssets(),
             planeGroup
           );
-        } else if (planeGroup.position.z < -6) {
-          // Despawn and respawn earlier
+        } else if (planeGroup.position.z < -8) {
           this.clearVegetationFromPlane(planeGroup);
-          planeGroup.position.z = 6; // Reposition slightly ahead for smooth transition
-          planeGroup.position.y = this.initialPositions[planeName].y; // Reset Y to the original position
+          planeGroup.position.z += 12 * 1.5; // Reposition further ahead to maintain continuity
+          planeGroup.position.y =
+            this.initialPositions[planeName.split('_')[0] as PlaneName].y; // Reset Y to the original position
           this.populateWithVegetation(
             this.generateVegetationAssets(),
             planeGroup
@@ -146,7 +181,7 @@ export class StageMediatorService {
         }
 
         // Update plane color based on Z position
-        const colorTransitionFactor = (planeGroup.position.z + 6) / 12; // Normalize Z position for color interpolation
+        const colorTransitionFactor = (planeGroup.position.z + 8) / 16; // Normalize Z position for color interpolation
         const color = this.interpolateColor(colorTransitionFactor);
         this.updatePlaneColor(planeGroup, color);
       }
@@ -172,20 +207,22 @@ export class StageMediatorService {
       this.vegetationMap.set(planeGroup.name, []); // Reset vegetation array
     }
   }
-
   private interpolateColor(factor: number): string {
-    const theme = this.currentThemeConfig.light; // Assuming light theme for now
-    const darkColor = new THREE.Color(theme['darkGreenPlane']);
-    const mediumColor = new THREE.Color(theme['mediumGreenPlane']);
+    const theme = this.isDarkMode
+      ? this.currentThemeConfig.dark
+      : this.currentThemeConfig.light;
+
     const lightColor = new THREE.Color(theme['lightGreenPlane']);
+    const mediumColor = new THREE.Color(theme['mediumGreenPlane']);
+    const darkColor = new THREE.Color(theme['darkGreenPlane']);
 
     let color;
     if (factor <= 0.5) {
-      // Interpolate between darkGreenPlane and mediumGreenPlane
-      color = darkColor.clone().lerp(mediumColor, factor * 2);
+      // Interpolate between lightGreenPlane and mediumGreenPlane
+      color = lightColor.clone().lerp(mediumColor, factor * 2);
     } else {
-      // Interpolate between mediumGreenPlane and lightGreenPlane
-      color = mediumColor.clone().lerp(lightColor, (factor - 0.5) * 2);
+      // Interpolate between mediumGreenPlane and darkGreenPlane
+      color = mediumColor.clone().lerp(darkColor, (factor - 0.5) * 2);
     }
 
     return `#${color.getHexString()}`;
@@ -200,16 +237,9 @@ export class StageMediatorService {
     });
   }
 
-  private adjustColorBrightness(color: string, direction: number): string {
-    const colorObj = new THREE.Color(color);
-    const brightnessFactor = direction > 0 ? 1.05 : 0.95; // Adjust brightness factor as needed
-    colorObj.multiplyScalar(brightnessFactor);
-    return `#${colorObj.getHexString()}`;
-  }
-
   private populateWithVegetation(assets: Asset[], planeGroup: THREE.Group) {
     const planeConfig = this.configService.planesConfig.find(
-      (p) => p.name === planeGroup.name
+      (p) => p.name === planeGroup.name.split('_')[0]
     );
     if (planeConfig) {
       this.addVegetationToPlane(planeConfig, assets, planeGroup);
@@ -265,7 +295,12 @@ export class StageMediatorService {
     const mouseY = (event.clientY - centerY) / centerY;
 
     this.planeGroups.forEach((planeGroup, planeName) => {
-      const originalPosition = this.initialPositions[planeName];
+      // Extract the base name from the plane group name (e.g., "darkGreenPlane_0" -> "darkGreenPlane")
+      const basePlaneName = planeName.split('_')[0] as PlaneName; // Cast to PlaneName to match initialPositions keys
+
+      // Ensure that basePlaneName is a key in initialPositions
+      const originalPosition = this.initialPositions[basePlaneName];
+
       const depthFactor = 1 / Math.abs(originalPosition.z);
       const newPositionX = mouseX * depthFactor * 10;
       const newPositionY = originalPosition.y + mouseY * depthFactor * 1.5;
@@ -289,7 +324,6 @@ export class StageMediatorService {
       this.addModeToggleButton();
     };
 
-    // Fixed position above all planes
     this.sceneService.createInteractionBox(
       'modeToggle',
       texturePath,
@@ -307,7 +341,7 @@ export class StageMediatorService {
       : this.currentThemeConfig.light;
 
     this.planeGroups.forEach((planeGroup, planeName) => {
-      const colorKey = planeName as keyof ColorTheme;
+      const colorKey = planeName.split('_')[0] as keyof ColorTheme;
       const colorSource = planeName.includes('Sky')
         ? themeColors['sky']
         : themeColors;
@@ -315,11 +349,7 @@ export class StageMediatorService {
 
       planeGroup.children.forEach((child) => {
         if (child instanceof THREE.Mesh) {
-          this.lerpColor(
-            (child.material as THREE.MeshBasicMaterial).color,
-            newColor,
-            0.2
-          );
+          (child.material as THREE.MeshBasicMaterial).color.set(newColor);
         }
       });
     });
