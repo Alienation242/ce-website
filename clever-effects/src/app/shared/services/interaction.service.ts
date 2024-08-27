@@ -109,7 +109,7 @@ export class InteractionService {
       if (!planeGroup.name.includes('Sky')) {
         planeGroup.position.z += direction * 0.5; // Adjust the scroll speed
 
-        const yScrollThreshold = 1 / 2; // Set the threshold ratio for Y-axis scrolling
+        const yScrollThreshold = 1 / 3; // Set the threshold ratio for Y-axis scrolling
 
         // Adjust the Y offset with the threshold ratio for better plane management
         planeGroup.position.y += direction * 0.1 * yScrollThreshold;
