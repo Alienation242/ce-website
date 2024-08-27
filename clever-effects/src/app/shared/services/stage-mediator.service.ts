@@ -41,6 +41,7 @@ export class StageMediatorService {
   ) {
     this.currentThemeConfig = this.configService.getTheme('meadow'); // Initialize the theme config
     window.addEventListener('wheel', this.onMouseWheel); // Add wheel event listener
+    window.addEventListener('mousemove', this.onMouseMove); // Add mouse move event listener
   }
 
   public getRendererDOM(): HTMLCanvasElement {
@@ -62,10 +63,22 @@ export class StageMediatorService {
     this.lastMouseY = event.clientY;
   }
 
+  private onMouseMove = (event: MouseEvent): void => {
+    // Calculate normalized mouse position
+    this.lastMouseX = (event.clientX / window.innerWidth) * 2 - 1;
+    this.lastMouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    // Apply parallax effect based on the new mouse position
+    this.applyParallax();
+  };
+
   private onMouseWheel = (event: WheelEvent): void => {
     const direction = event.deltaY > 0 ? 1 : -1; // Determine scroll direction
     this.scrollOffset += direction * 0.5; // Update scroll offset
     this.scrollLandscape(direction);
+
+    // Apply parallax effect after scrolling
+    this.applyParallax();
   };
 
   private generateVegetationAssets(): Asset[] {
@@ -201,22 +214,23 @@ export class StageMediatorService {
   }
 
   private applyParallax(): void {
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
-    const mouseX = (this.lastMouseX - centerX) / centerX;
-    const mouseY = (this.lastMouseY - centerY) / centerY;
-
     this.planeGroups.forEach((planeGroup, planeName) => {
       const basePlaneName = planeName.split('_')[0] as PlaneName;
       const originalPosition = this.initialPositions[basePlaneName];
 
       const depthFactor = 1 / Math.abs(originalPosition.z);
-      const newPositionX = mouseX * depthFactor * 10;
-      const newPositionY = originalPosition.y + mouseY * depthFactor * 1.5;
+      const parallaxAmountX = this.lastMouseX * depthFactor * 5; // Adjust the factor for stronger/weaker parallax
+      const parallaxAmountY = this.lastMouseY * depthFactor * 5; // Adjust the factor for stronger/weaker parallax
 
-      planeGroup.position.x = newPositionX;
-      planeGroup.position.y = newPositionY;
+      // Apply parallax offset to plane position
+      planeGroup.position.x = parallaxAmountX;
+      planeGroup.position.y = originalPosition.y + parallaxAmountY;
     });
+
+    // Render the scene after applying parallax effect
+    this.sceneService
+      .getRenderer()
+      .render(this.sceneService.getScene(), this.sceneService.getCamera());
   }
 
   private clearVegetationFromPlane(planeGroup: THREE.Group): void {
