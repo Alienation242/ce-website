@@ -99,11 +99,10 @@ export class SceneService {
     this.scene.add(object);
   }
 
-  // In SceneService
   public removeFromScene(objectName: string): void {
     const object = this.scene.getObjectByName(objectName);
     if (object) {
-      this.scene.remove(object);
+      object.parent?.remove(object); // Remove object from its parent
       // If the object is also part of interactiveObjects, remove it from there too
       const index = this.interactiveObjects.findIndex(
         (obj) => obj.name === objectName
@@ -118,48 +117,48 @@ export class SceneService {
     color: string,
     position: THREE.Vector3,
     size: THREE.Vector2,
-    name: string
+    name: string,
+    parentGroup: THREE.Group
   ): void {
-    if (!color) {
-      console.error(`Invalid color for plane ${name}`);
-      color = '#FFFFFF'; // Fallback to white if color is undefined
-    }
     const geometry = new THREE.PlaneGeometry(size.x, size.y);
     const material = new THREE.MeshBasicMaterial({
       color,
       side: THREE.DoubleSide,
     });
     const plane = new THREE.Mesh(geometry, material);
-    plane.position.set(position.x, position.y, position.z);
-    plane.name = name; // Set the name for reference
-    this.addToScene(plane);
+    plane.position.copy(position);
+    plane.name = name;
+    parentGroup.add(plane); // Add plane to the parent group
   }
+
   public addDecorativePlane(
     textureUrl: string,
     position: THREE.Vector3,
     size: THREE.Vector2,
     color: string,
     parentPlaneName: string
-  ): void {
-    this.assetLoaderService.loadTexture(textureUrl).then((texture) => {
-      const geometry = new THREE.PlaneGeometry(size.x, size.y);
-      const material = new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true,
-        side: THREE.DoubleSide,
-        color: color, // Apply the color tint
-      });
-      const decorativePlane = new THREE.Mesh(geometry, material);
-      decorativePlane.position.set(position.x, position.y, position.z);
+  ): Promise<THREE.Mesh | null> {
+    // Return a Promise
+    return this.assetLoaderService
+      .loadTexture(textureUrl)
+      .then((texture) => {
+        const geometry = new THREE.PlaneGeometry(size.x, size.y);
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          transparent: true,
+          side: THREE.DoubleSide,
+          color,
+        });
+        const decorativePlane = new THREE.Mesh(geometry, material);
+        decorativePlane.position.copy(position);
+        decorativePlane.name = `vegetation_${parentPlaneName}`;
 
-      // Retrieve the parent plane by name and add the decorative plane as its child
-      const parentPlane = this.scene.getObjectByName(parentPlaneName);
-      if (parentPlane) {
-        parentPlane.add(decorativePlane);
-      } else {
-        console.warn(`Parent plane '${parentPlaneName}' not found.`);
-      }
-    });
+        return decorativePlane; // Resolve the Promise with the mesh
+      })
+      .catch((error) => {
+        console.error(`Failed to load texture "${textureUrl}":`, error);
+        return null; // Resolve with null in case of an error
+      });
   }
 
   public addObjectToPlane(object: THREE.Object3D, planeName: string): void {
