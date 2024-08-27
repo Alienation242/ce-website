@@ -23,12 +23,12 @@ export class StageMediatorService {
   private scrollOffset = 0; // Tracks how far we've scrolled
 
   initialPositions: { [key in PlaneName]: { y: number; z: number } } = {
-    darkGreenPlane: { y: -7, z: -3 },
-    mediumGreenPlane: { y: -5, z: -4 },
-    lightGreenPlane: { y: -3, z: -5 },
-    lightBlueSky: { y: 1, z: -10 },
+    darkGreenPlane: { y: -3, z: -2 },
+    mediumGreenPlane: { y: -2, z: -2.5 },
+    lightGreenPlane: { y: -1, z: -3 },
+    lightBlueSky: { y: 3, z: -10 }, // Keep sky positions as they are
     mediumBlueSky: { y: 5, z: -9 },
-    darkBlueSky: { y: 9, z: -8 },
+    darkBlueSky: { y: 7, z: -8 },
   };
 
   constructor(
@@ -203,9 +203,9 @@ export class StageMediatorService {
     for (let i = 0; i < numItems; i++) {
       const asset = assets[Math.floor(Math.random() * assets.length)];
       const position = new THREE.Vector3(
-        (Math.random() - 0.5) * 40,
-        asset.yOffset + plane.vegetationYOffset,
-        planeGroup.position.z
+        (Math.random() - 0.5) * 40, // Randomly distributed along the X-axis
+        asset.yOffset + plane.vegetationYOffset, // Y-position based on plane config
+        planeGroup.position.z + 0.01 // Slightly above the plane (use a very small value)
       );
       const size = new THREE.Vector2(plane.scale * 1.5, plane.scale);
 
