@@ -219,12 +219,23 @@ export class StageMediatorService {
       const originalPosition = this.initialPositions[basePlaneName];
 
       const depthFactor = 1 / Math.abs(originalPosition.z);
-      const parallaxAmountX = this.lastMouseX * depthFactor * 5; // Adjust the factor for stronger/weaker parallax
-      const parallaxAmountY = this.lastMouseY * depthFactor * 5; // Adjust the factor for stronger/weaker parallax
 
-      // Apply parallax offset to plane position
-      planeGroup.position.x = parallaxAmountX;
-      planeGroup.position.y = originalPosition.y + parallaxAmountY;
+      // Increase these factors for a faster parallax effect
+      const parallaxStrengthX = 8; // Adjust for stronger/weaker parallax effect
+      const parallaxStrengthY = 8; // Adjust for stronger/weaker parallax effect
+
+      const targetX = this.lastMouseX * depthFactor * parallaxStrengthX;
+      const targetY = this.lastMouseY * depthFactor * parallaxStrengthY;
+
+      // Reduce the smoothing factor for quicker response (e.g., 0.2 to 0.3 for faster movement)
+      const smoothingFactor = 0.2; // Increase this value for faster response, decrease for slower, smoother
+
+      // Smooth transition with reduced smoothing for faster movement
+      planeGroup.position.x +=
+        (targetX - planeGroup.position.x) * smoothingFactor;
+      planeGroup.position.y +=
+        (originalPosition.y + targetY - planeGroup.position.y) *
+        smoothingFactor;
     });
 
     // Render the scene after applying parallax effect
