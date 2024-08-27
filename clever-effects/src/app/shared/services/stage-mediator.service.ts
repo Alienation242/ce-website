@@ -205,7 +205,7 @@ export class StageMediatorService {
       const position = new THREE.Vector3(
         (Math.random() - 0.5) * 40, // Randomly distributed along the X-axis
         asset.yOffset + plane.vegetationYOffset, // Y-position based on plane config
-        planeGroup.position.z + 0.01 // Slightly above the plane (use a very small value)
+        0 // Z-position relative to planeGroup; no offset needed here
       );
       const size = new THREE.Vector2(plane.scale * 1.5, plane.scale);
 
@@ -243,7 +243,7 @@ export class StageMediatorService {
       const originalPosition = this.initialPositions[planeName];
       const depthFactor = 1 / Math.abs(originalPosition.z);
       const newPositionX = mouseX * depthFactor * 10;
-      const newPositionY = originalPosition.y + mouseY * depthFactor * 4;
+      const newPositionY = originalPosition.y + mouseY * depthFactor * 2;
 
       planeGroup.position.x = newPositionX;
       planeGroup.position.y = newPositionY;

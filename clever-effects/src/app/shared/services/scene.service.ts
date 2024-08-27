@@ -138,7 +138,6 @@ export class SceneService {
     color: string,
     parentPlaneName: string
   ): Promise<THREE.Mesh | null> {
-    // Return a Promise
     return this.assetLoaderService
       .loadTexture(textureUrl)
       .then((texture) => {
@@ -153,11 +152,11 @@ export class SceneService {
         decorativePlane.position.copy(position);
         decorativePlane.name = `vegetation_${parentPlaneName}`;
 
-        return decorativePlane; // Resolve the Promise with the mesh
+        return decorativePlane;
       })
       .catch((error) => {
         console.error(`Failed to load texture "${textureUrl}":`, error);
-        return null; // Resolve with null in case of an error
+        return null;
       });
   }
 
