@@ -22,6 +22,9 @@ export class StageMediatorService {
   private vegetationMap: Map<string, THREE.Object3D[]> = new Map(); // Track vegetation objects per plane
   private scrollOffset = 0; // Tracks how far we've scrolled
 
+  private lastMouseX: number = window.innerWidth / 2;
+  private lastMouseY: number = window.innerHeight / 2;
+
   initialPositions: { [key in PlaneName]: { y: number; z: number } } = {
     darkGreenPlane: { y: -5, z: -2 }, // Lower starting Y position
     mediumGreenPlane: { y: -4, z: -2.5 }, // Lower starting Y position
@@ -54,6 +57,11 @@ export class StageMediatorService {
     this.setupStage();
   }
 
+  private trackMouse(event: MouseEvent): void {
+    this.lastMouseX = event.clientX;
+    this.lastMouseY = event.clientY;
+  }
+
   private onMouseWheel = (event: WheelEvent): void => {
     const direction = event.deltaY > 0 ? 1 : -1; // Determine scroll direction
     this.scrollOffset += direction * 0.5; // Update scroll offset
@@ -74,7 +82,7 @@ export class StageMediatorService {
     const themeColors = this.isDarkMode ? theme.dark : theme.light;
 
     // Define the number of ground planes to generate
-    const numberOfGroundPlanes = 12;
+    const numberOfGroundPlanes = 16;
 
     for (let i = 0; i < numberOfGroundPlanes; i++) {
       (Object.keys(this.initialPositions) as PlaneName[]).forEach(
@@ -94,13 +102,17 @@ export class StageMediatorService {
             ? themeColors['sky'][colorKey]
             : themeColors[colorKey];
 
+          // Correctly calculate initial color based on Z position
+          const colorTransitionFactor = (initialZPosition + 8) / 16; // Normalize Z position for color interpolation
+          const initialColor = this.interpolateColor(colorTransitionFactor);
+
           // Create a group for each plane
           const planeGroup = new THREE.Group();
           planeGroup.position.set(0, y, initialZPosition);
           planeGroup.name = `${planeName}_${i}`; // Unique name for each plane instance
 
           this.sceneService.addColoredPlane(
-            color,
+            initialColor, // Use calculated color
             position,
             size,
             planeGroup.name as PlaneName,
@@ -180,7 +192,7 @@ export class StageMediatorService {
           );
         }
 
-        // Update plane color based on Z position
+        // Correct color update after repositioning
         const colorTransitionFactor = (planeGroup.position.z + 8) / 16; // Normalize Z position for color interpolation
         const color = this.interpolateColor(colorTransitionFactor);
         this.updatePlaneColor(planeGroup, color);
@@ -188,16 +200,23 @@ export class StageMediatorService {
     });
   }
 
-  private respawnPlane(planeGroup: THREE.Group, newPositionZ: number): void {
-    const originalPosition =
-      this.initialPositions[planeGroup.name as PlaneName];
+  private applyParallax(): void {
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    const mouseX = (this.lastMouseX - centerX) / centerX;
+    const mouseY = (this.lastMouseY - centerY) / centerY;
 
-    planeGroup.position.z = newPositionZ;
-    planeGroup.position.y = originalPosition.y; // Reset Y to original position to avoid drift
+    this.planeGroups.forEach((planeGroup, planeName) => {
+      const basePlaneName = planeName.split('_')[0] as PlaneName;
+      const originalPosition = this.initialPositions[basePlaneName];
 
-    // Reinitialize vegetation to avoid flicker
-    const assets = this.generateVegetationAssets();
-    this.populateWithVegetation(assets, planeGroup);
+      const depthFactor = 1 / Math.abs(originalPosition.z);
+      const newPositionX = mouseX * depthFactor * 10;
+      const newPositionY = originalPosition.y + mouseY * depthFactor * 1.5;
+
+      planeGroup.position.x = newPositionX;
+      planeGroup.position.y = newPositionY;
+    });
   }
 
   private clearVegetationFromPlane(planeGroup: THREE.Group): void {
@@ -229,6 +248,7 @@ export class StageMediatorService {
   }
 
   private updatePlaneColor(planeGroup: THREE.Group, color: string): void {
+    console.log(`Updating color for ${planeGroup.name} to ${color}`);
     planeGroup.children.forEach((child) => {
       if (child instanceof THREE.Mesh) {
         const material = child.material as THREE.MeshBasicMaterial;
@@ -295,10 +315,7 @@ export class StageMediatorService {
     const mouseY = (event.clientY - centerY) / centerY;
 
     this.planeGroups.forEach((planeGroup, planeName) => {
-      // Extract the base name from the plane group name (e.g., "darkGreenPlane_0" -> "darkGreenPlane")
-      const basePlaneName = planeName.split('_')[0] as PlaneName; // Cast to PlaneName to match initialPositions keys
-
-      // Ensure that basePlaneName is a key in initialPositions
+      const basePlaneName = planeName.split('_')[0] as PlaneName;
       const originalPosition = this.initialPositions[basePlaneName];
 
       const depthFactor = 1 / Math.abs(originalPosition.z);
@@ -308,6 +325,11 @@ export class StageMediatorService {
       planeGroup.position.x = newPositionX;
       planeGroup.position.y = newPositionY;
     });
+
+    // Update the renderer after applying parallax
+    this.sceneService
+      .getRenderer()
+      .render(this.sceneService.getScene(), this.sceneService.getCamera());
   };
 
   public addModeToggleButton(): void {
